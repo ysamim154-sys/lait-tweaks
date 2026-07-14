@@ -175,7 +175,7 @@ $Tweaks = @()
 # GERAL
 # -------------------------------------------------------------------------
 $Tweaks += [PSCustomObject]@{
-    Name = "Prioridade de Jogos (Tasks\Games)"; Category = "Geral"; Danger = $false
+    Name = "Prioridade de Jogos (Tasks\Games)"; Category = "InputLag"; Danger = $false
     Description = "Da prioridade maxima de CPU e GPU pros jogos em primeiro plano."
     Apply  = {
         $k = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
@@ -193,7 +193,7 @@ $Tweaks += [PSCustomObject]@{
     }
 }
 $Tweaks += [PSCustomObject]@{
-    Name = "Win32PrioritySeparation"; Category = "Geral"; Danger = $false
+    Name = "Win32PrioritySeparation"; Category = "InputLag"; Danger = $false
     Description = "Prioriza o app que esta em foco na tela (jogos) em vez de apps em segundo plano."
     Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 0x26 /f | Out-Null }
     Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 0xa /f | Out-Null }
@@ -217,7 +217,7 @@ $Tweaks += [PSCustomObject]@{
     }
 }
 $Tweaks += [PSCustomObject]@{
-    Name = "Desabilitar Dynamic Tick"; Category = "Geral"; Danger = $false
+    Name = "Desabilitar Dynamic Tick"; Category = "InputLag"; Danger = $false
     Description = "Reduz interrupcoes do timer do sistema, deixando o PC mais estavel em jogos."
     Apply  = { bcdedit /set Disabledynamictick yes | Out-Null }
     Revert = { bcdedit /deletevalue Disabledynamictick | Out-Null }
@@ -278,6 +278,228 @@ $Tweaks += [PSCustomObject]@{
     Revert = {
         reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v "ToastEnabled" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKCU\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v "DisableNotificationCenter" /t REG_DWORD /d 0 /f | Out-Null
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Synthetic Timers"; Category = "InputLag"; Danger = $false
+    Description = "Complementa o Dynamic Tick, reduzindo ainda mais interrupcoes de timer do sistema."
+    Apply  = { bcdedit /set useplatformtick yes | Out-Null }
+    Revert = { bcdedit /deletevalue useplatformtick | Out-Null }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "IO Time Stamp e Reliability"; Category = "Geral"; Danger = $false
+    Description = "Ajusta o intervalo de monitoramento de confiabilidade do Windows."
+    Apply  = {
+        reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability" /v "TimeStampInterval" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability" /v "IoPriority" /t REG_DWORD /d 3 /f | Out-Null
+    }
+    Revert = {
+        reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability" /v "TimeStampInterval" /t REG_DWORD /d 1440 /f | Out-Null
+        reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability" /v "IoPriority" /f 2>$null | Out-Null
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Habilitar Memory Mapping (BCD)"; Category = "Geral"; Danger = $false
+    Description = "Ajusta politicas de acesso a memoria e PCI no boot loader do Windows."
+    Apply  = {
+        bcdedit /set configaccesspolicy Default | Out-Null
+        bcdedit /set MSI Default | Out-Null
+        bcdedit /set usephysicaldestination No | Out-Null
+        bcdedit /set usefirmwarepcisettings No | Out-Null
+    }
+    Revert = {
+        bcdedit /deletevalue configaccesspolicy | Out-Null
+        bcdedit /deletevalue MSI | Out-Null
+        bcdedit /deletevalue usephysicaldestination | Out-Null
+        bcdedit /deletevalue usefirmwarepcisettings | Out-Null
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Latencia de Sistema e GraphicsDrivers"; Category = "InputLag"; Danger = $false
+    Description = "Zera as tolerancias de latencia de energia e graficos do Windows (menos economia, mais performance)."
+    Apply  = {
+        $power = "HKLM\SYSTEM\CurrentControlSet\Control\Power"
+        $dxg   = "HKLM\SYSTEM\CurrentControlSet\Services\DXGKrnl"
+        $gfx   = "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power"
+        reg add $dxg /v "MonitorLatencyTolerance" /t REG_DWORD /d 1 /f | Out-Null
+        reg add $dxg /v "MonitorRefreshLatencyTolerance" /t REG_DWORD /d 1 /f | Out-Null
+        foreach ($v in "ExitLatency","ExitLatencyCheckEnabled","Latency","LatencyToleranceDefault","LatencyToleranceFSVP","LatencyTolerancePerfOverride","LatencyToleranceScreenOffIR","LatencyToleranceVSyncEnabled","RtlCapabilityCheckLatency") {
+            reg add $power /v $v /t REG_DWORD /d 1 /f | Out-Null
+        }
+        foreach ($v in "DefaultD3TransitionLatencyActivelyUsed","DefaultD3TransitionLatencyIdleLongTime","DefaultD3TransitionLatencyIdleMonitorOff","DefaultD3TransitionLatencyIdleNoContext","DefaultD3TransitionLatencyIdleShortTime","DefaultD3TransitionLatencyIdleVeryLongTime","DefaultLatencyToleranceIdle0","DefaultLatencyToleranceIdle0MonitorOff","DefaultLatencyToleranceIdle1","DefaultLatencyToleranceIdle1MonitorOff","DefaultLatencyToleranceMemory","DefaultLatencyToleranceNoContext","DefaultLatencyToleranceNoContextMonitorOff","DefaultLatencyToleranceOther","DefaultLatencyToleranceTimerPeriod","DefaultMemoryRefreshLatencyToleranceActivelyUsed","DefaultMemoryRefreshLatencyToleranceMonitorOff","DefaultMemoryRefreshLatencyToleranceNoContext","Latency","MaxIAverageGraphicsLatencyInOneBucket","MiracastPerfTrackGraphicsLatency","MonitorLatencyTolerance","MonitorRefreshLatencyTolerance","TransitionLatency") {
+            reg add $gfx /v $v /t REG_DWORD /d 1 /f | Out-Null
+        }
+    }
+    Revert = {
+        $power = "HKLM\SYSTEM\CurrentControlSet\Control\Power"
+        $dxg   = "HKLM\SYSTEM\CurrentControlSet\Services\DXGKrnl"
+        $gfx   = "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power"
+        reg delete $dxg /v "MonitorLatencyTolerance" /f 2>$null | Out-Null
+        reg delete $dxg /v "MonitorRefreshLatencyTolerance" /f 2>$null | Out-Null
+        foreach ($v in "ExitLatency","ExitLatencyCheckEnabled","Latency","LatencyToleranceDefault","LatencyToleranceFSVP","LatencyTolerancePerfOverride","LatencyToleranceScreenOffIR","LatencyToleranceVSyncEnabled","RtlCapabilityCheckLatency") {
+            reg delete $power /v $v /f 2>$null | Out-Null
+        }
+        foreach ($v in "DefaultD3TransitionLatencyActivelyUsed","DefaultD3TransitionLatencyIdleLongTime","DefaultD3TransitionLatencyIdleMonitorOff","DefaultD3TransitionLatencyIdleNoContext","DefaultD3TransitionLatencyIdleShortTime","DefaultD3TransitionLatencyIdleVeryLongTime","DefaultLatencyToleranceIdle0","DefaultLatencyToleranceIdle0MonitorOff","DefaultLatencyToleranceIdle1","DefaultLatencyToleranceIdle1MonitorOff","DefaultLatencyToleranceMemory","DefaultLatencyToleranceNoContext","DefaultLatencyToleranceNoContextMonitorOff","DefaultLatencyToleranceOther","DefaultLatencyToleranceTimerPeriod","DefaultMemoryRefreshLatencyToleranceActivelyUsed","DefaultMemoryRefreshLatencyToleranceMonitorOff","DefaultMemoryRefreshLatencyToleranceNoContext","Latency","MaxIAverageGraphicsLatencyInOneBucket","MiracastPerfTrackGraphicsLatency","MonitorLatencyTolerance","MonitorRefreshLatencyTolerance","TransitionLatency") {
+            reg delete $gfx /v $v /f 2>$null | Out-Null
+        }
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Biometria"; Category = "Geral"; Danger = $false
+    Description = "Desliga o Windows Hello / leitura biometrica via politica de grupo."
+    Apply  = { reg add "HKLM\SOFTWARE\Policies\Microsoft\Biometrics" /v "Enabled" /t REG_DWORD /d 0 /f | Out-Null }
+    Revert = { reg add "HKLM\SOFTWARE\Policies\Microsoft\Biometrics" /v "Enabled" /t REG_DWORD /d 1 /f | Out-Null }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Ajustar System Responsiveness"; Category = "InputLag"; Danger = $false
+    Description = "Reduz a fatia de CPU reservada para tarefas em segundo plano, priorizando multimidia/jogos."
+    Apply  = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "SystemResponsiveness" /t REG_DWORD /d 10 /f | Out-Null }
+    Revert = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "SystemResponsiveness" /t REG_DWORD /d 20 /f | Out-Null }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Registrar Apenas Eventos de Falha Importantes"; Category = "Geral"; Danger = $false
+    Description = "Reduz o log de auditoria do Windows para so registrar falhas relevantes, aliviando disco/CPU."
+    Apply  = {
+        $subs = "Process Termination","RPC Events","Filtering Platform Connection","Other System Events","Security State Change","Security System Extension","System Integrity"
+        foreach ($s in $subs) { auditpol /set /subcategory:"$s" /failure:enable 2>$null | Out-Null }
+        reg add "HKLM\System\CurrentControlSet\Control\WMI\Autologger\AutoLogger-Diagtrack-Listener" /v "Start" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKLM\System\CurrentControlSet\Control\WMI\Autologger\DiagLog" /v "Start" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKLM\System\CurrentControlSet\Control\WMI\Autologger\Diagtrack-Listener" /v "Start" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKLM\System\CurrentControlSet\Control\WMI\Autologger\WiFiSession" /v "Start" /t REG_DWORD /d 0 /f | Out-Null
+    }
+    Revert = {
+        reg add "HKLM\System\CurrentControlSet\Control\WMI\Autologger\AutoLogger-Diagtrack-Listener" /v "Start" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKLM\System\CurrentControlSet\Control\WMI\Autologger\DiagLog" /v "Start" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKLM\System\CurrentControlSet\Control\WMI\Autologger\Diagtrack-Listener" /v "Start" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKLM\System\CurrentControlSet\Control\WMI\Autologger\WiFiSession" /v "Start" /t REG_DWORD /d 1 /f | Out-Null
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Experimentos do Windows Insider"; Category = "Geral"; Danger = $false
+    Description = "Impede que a Microsoft rode experimentos A/B silenciosos no seu Windows."
+    Apply  = {
+        reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\System" /v "AllowExperimentation" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\System\AllowExperimentation" /v "value" /t REG_DWORD /d 0 /f | Out-Null
+    }
+    Revert = {
+        reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\System" /v "AllowExperimentation" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\System\AllowExperimentation" /v "value" /t REG_DWORD /d 1 /f | Out-Null
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Activity Feed e Experiencias Compartilhadas"; Category = "Geral"; Danger = $false
+    Description = "Desliga o historico de atividades, sugestoes personalizadas e compartilhamento entre dispositivos (Nearby Share/CDP)."
+    Apply  = {
+        reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v "EnableFeeds" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKLM\SOFTWARE\Policies\Microsoft" /v "AllowNewsAndInterests" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "EnableActivityFeed" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo" /v "Enabled" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CDP" /v "CdpSessionUserAuthzPolicy" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CDP" /v "NearShareChannelUserAuthzPolicy" /t REG_DWORD /d 0 /f | Out-Null
+    }
+    Revert = {
+        reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v "EnableFeeds" /t REG_DWORD /d 1 /f | Out-Null
+        reg delete "HKLM\SOFTWARE\Policies\Microsoft" /v "AllowNewsAndInterests" /f 2>$null | Out-Null
+        reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "EnableActivityFeed" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo" /v "Enabled" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CDP" /v "CdpSessionUserAuthzPolicy" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CDP" /v "NearShareChannelUserAuthzPolicy" /t REG_DWORD /d 1 /f | Out-Null
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Manutencao Automatica"; Category = "Geral"; Danger = $false
+    Description = "Impede que o Windows rode a manutencao automatica (limpeza/scan) enquanto voce esta jogando."
+    Apply  = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance" /v "MaintenanceDisabled" /t REG_DWORD /d 1 /f | Out-Null }
+    Revert = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance" /v "MaintenanceDisabled" /t REG_DWORD /d 0 /f | Out-Null }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Ajustar Compatibilidade de Apps (AppCompat)"; Category = "Geral"; Danger = $false
+    Description = "Desliga a telemetria e o motor de deteccao de compatibilidade de apps do Windows."
+    Apply  = {
+        $k = "HKLM\Software\Policies\Microsoft\Windows\AppCompat"
+        reg add $k /v "AITEnable" /t REG_DWORD /d 0 /f | Out-Null
+        reg add $k /v "AllowTelemetry" /t REG_DWORD /d 0 /f | Out-Null
+        reg add $k /v "DisableInventory" /t REG_DWORD /d 1 /f | Out-Null
+        reg add $k /v "DisableUAR" /t REG_DWORD /d 1 /f | Out-Null
+        reg add $k /v "DisableEngine" /t REG_DWORD /d 1 /f | Out-Null
+        reg add $k /v "DisablePCA" /t REG_DWORD /d 1 /f | Out-Null
+    }
+    Revert = {
+        $k = "HKLM\Software\Policies\Microsoft\Windows\AppCompat"
+        foreach ($v in "AITEnable","AllowTelemetry","DisableInventory","DisableUAR","DisableEngine","DisablePCA") {
+            reg delete $k /v $v /f 2>$null | Out-Null
+        }
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Rastreamento e Diagnosticos Extras"; Category = "Geral"; Danger = $false
+    Description = "Desliga experiencias personalizadas com dados de diagnostico e algumas tarefas de coleta de dados do sistema."
+    Apply  = {
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy" /v "TailoredExperiencesWithDiagnosticDataEnabled" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKCU\Software\Microsoft\Input\TIPC" /v "Enabled" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKLM\Software\Policies\Microsoft\Windows\System" /v "UploadUserActivities" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKLM\Software\Policies\Microsoft\Windows\System" /v "PublishUserActivities" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKLM\System\CurrentControlSet\Control\Diagnostics\Performance" /v "DisablediagnosticTracing" /t REG_DWORD /d 1 /f | Out-Null
+        foreach ($t in "\Microsoft\Windows\Application Experience\StartupAppTask","\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector","\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticResolver","\Microsoft\Windows\Power Efficiency Diagnostics\AnalyzeSystem") {
+            schtasks /change /tn "$t" /Disable 2>$null | Out-Null
+        }
+    }
+    Revert = {
+        reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy" /v "TailoredExperiencesWithDiagnosticDataEnabled" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKCU\Software\Microsoft\Input\TIPC" /v "Enabled" /t REG_DWORD /d 1 /f | Out-Null
+        reg delete "HKLM\Software\Policies\Microsoft\Windows\System" /v "UploadUserActivities" /f 2>$null | Out-Null
+        reg delete "HKLM\Software\Policies\Microsoft\Windows\System" /v "PublishUserActivities" /f 2>$null | Out-Null
+        reg add "HKLM\System\CurrentControlSet\Control\Diagnostics\Performance" /v "DisablediagnosticTracing" /t REG_DWORD /d 0 /f | Out-Null
+        foreach ($t in "\Microsoft\Windows\Application Experience\StartupAppTask","\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector","\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticResolver","\Microsoft\Windows\Power Efficiency Diagnostics\AnalyzeSystem") {
+            schtasks /change /tn "$t" /Enable 2>$null | Out-Null
+        }
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Independent Flip e Fullscreen Optimizations"; Category = "InputLag"; Danger = $false
+    Description = "Desliga Composed Flip e Fullscreen Optimizations, deixando jogos em tela cheia exclusiva com menos latencia."
+    Apply  = {
+        reg delete "HKLM\SOFTWARE\Microsoft\Windows\Dwm" /v "OverlayTestMode" /f 2>$null | Out-Null
+        $k = "HKCU\SYSTEM\GameConfigStore"
+        foreach ($v in "GameDVR_DSEBehavior","GameDVR_FSEBehaviorMode","GameDVR_EFSEFeatureFlags","GameDVR_DXGIHonorFSEWindowsCompatible","GameDVR_HonorUserFSEBehaviorMode") {
+            reg add $k /v $v /t REG_DWORD /d 0 /f | Out-Null
+        }
+    }
+    Revert = {
+        $k = "HKCU\SYSTEM\GameConfigStore"
+        foreach ($v in "GameDVR_DSEBehavior","GameDVR_FSEBehaviorMode","GameDVR_EFSEFeatureFlags","GameDVR_DXGIHonorFSEWindowsCompatible","GameDVR_HonorUserFSEBehaviorMode") {
+            reg delete $k /v $v /f 2>$null | Out-Null
+        }
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Otimizacoes de VRR"; Category = "Geral"; Danger = $false
+    Description = "Desliga o VRR Optimize automatico do DirectX, util se voce ja controla VRR pelo driver da GPU."
+    Apply  = { reg add "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" /t REG_SZ /d "VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;" /f | Out-Null }
+    Revert = { reg delete "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" /f 2>$null | Out-Null }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Busca Automatica de Drivers"; Category = "Geral"; Danger = $false
+    Description = "Impede que o Windows Update baixe drivers sozinho por tras das suas costas."
+    Apply  = {
+        reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKLM\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\PolicyState" /v "ExcludeWUDrivers" /t REG_DWORD /d 1 /f | Out-Null
+    }
+    Revert = {
+        reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKLM\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\PolicyState" /v "ExcludeWUDrivers" /t REG_DWORD /d 0 /f | Out-Null
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Game Mode (Windows 11 liga / Windows 10 desliga)"; Category = "Geral"; Danger = $false
+    Description = "Ativa o Game Mode - recomendado ligar no Windows 11 e desligar no Windows 10."
+    Apply  = {
+        reg add "HKCU\SOFTWARE\Microsoft\GameBar" /v "AllowAutoGameMode" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKCU\SOFTWARE\Microsoft\GameBar" /v "AutoGameModeEnabled" /t REG_DWORD /d 1 /f | Out-Null
+    }
+    Revert = {
+        reg add "HKCU\SOFTWARE\Microsoft\GameBar" /v "AllowAutoGameMode" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKCU\SOFTWARE\Microsoft\GameBar" /v "AutoGameModeEnabled" /t REG_DWORD /d 0 /f | Out-Null
     }
 }
 
@@ -526,6 +748,26 @@ $Tweaks += [PSCustomObject]@{
     }
     Revert = { Write-Log "  [INFO] TRIM e uma acao unica, nao ha o que reverter." }
 }
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Write Cache Buffer Flushing"; Category = "Armazenamento"; Danger = $true
+    Description = "Para de forcar o disco a confirmar cada escrita fisicamente - mais performance, mas se faltar luz durante uma escrita pode perder dados. So use com nobreak/notebook."
+    Apply  = {
+        $keys = reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum" /f "{4d36e967-e325-11ce-bfc1-08002be10318}" /d /s 2>$null | Select-String "HKEY_LOCAL_MACHINE"
+        foreach ($k in $keys) {
+            $path = "$($k.ToString().Trim())\Device Parameters\Disk"
+            reg add $path /v "UserWriteCacheSetting" /t REG_DWORD /d 1 /f 2>$null | Out-Null
+            reg add $path /v "CacheIsPowerProtected" /t REG_DWORD /d 1 /f 2>$null | Out-Null
+        }
+    }
+    Revert = {
+        $keys = reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum" /f "{4d36e967-e325-11ce-bfc1-08002be10318}" /d /s 2>$null | Select-String "HKEY_LOCAL_MACHINE"
+        foreach ($k in $keys) {
+            $path = "$($k.ToString().Trim())\Device Parameters\Disk"
+            reg delete $path /v "UserWriteCacheSetting" /f 2>$null | Out-Null
+            reg delete $path /v "CacheIsPowerProtected" /f 2>$null | Out-Null
+        }
+    }
+}
 
 # -------------------------------------------------------------------------
 # REDE
@@ -695,6 +937,44 @@ $Tweaks += [PSCustomObject]@{
     Apply  = { Set-NicPowerSaving -Value 0 }
     Revert = { Set-NicPowerSaving -Value 1 }
 }
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Network Throttling Index"; Category = "Rede"; Danger = $false
+    Description = "Remove o limite que o Windows impoe no processamento de rede multimidia - reduz jitter/lag em jogos online."
+    Apply  = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "NetworkThrottlingIndex" /t REG_DWORD /d 0xffffffff /f | Out-Null }
+    Revert = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "NetworkThrottlingIndex" /t REG_DWORD /d 10 /f | Out-Null }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Forcar Velocidade Maxima da Placa de Rede (Speed & Duplex)"; Category = "Rede"; Danger = $false
+    Description = "Trava a placa de rede na maior velocidade Full Duplex disponivel (pelo menos 1.0 Gbps, ou mais se sua placa suportar), em vez de deixar no Auto Negotiation."
+    Apply  = {
+        $adapters = Get-NetAdapter -Physical -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" }
+        foreach ($ad in $adapters) {
+            $prop = Get-NetAdapterAdvancedProperty -Name $ad.Name -RegistryKeyword "*SpeedDuplex" -ErrorAction SilentlyContinue
+            if (-not $prop) { continue }
+            $bestValue = $null
+            $bestSpeed = -1
+            for ($i = 0; $i -lt $prop.ValidRegistryValues.Count; $i++) {
+                $disp = $prop.ValidDisplayValues[$i]
+                if ($disp -notmatch "Full Duplex") { continue }
+                $speed = 0
+                if ($disp -match "([\d\.]+)\s*Gbps") { $speed = [double]$matches[1] * 1000 }
+                elseif ($disp -match "([\d\.]+)\s*Mbps") { $speed = [double]$matches[1] }
+                if ($speed -gt $bestSpeed) { $bestSpeed = $speed; $bestValue = $prop.ValidRegistryValues[$i] }
+            }
+            if ($bestValue) {
+                try { Set-NetAdapterAdvancedProperty -Name $ad.Name -RegistryKeyword "*SpeedDuplex" -RegistryValue $bestValue -ErrorAction Stop }
+                catch { Write-Log "  [ERRO] Nao consegui setar Speed & Duplex em $($ad.Name): $($_.Exception.Message)" }
+            }
+        }
+    }
+    Revert = {
+        $adapters = Get-NetAdapter -Physical -ErrorAction SilentlyContinue
+        foreach ($ad in $adapters) {
+            try { Set-NetAdapterAdvancedProperty -Name $ad.Name -RegistryKeyword "*SpeedDuplex" -RegistryValue 0 -ErrorAction SilentlyContinue }
+            catch {}
+        }
+    }
+}
 
 # -------------------------------------------------------------------------
 # ENERGIA
@@ -830,6 +1110,36 @@ $Tweaks += [PSCustomObject]@{
     Apply  = { powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 4d2b0152-7d5c-498b-88e2-34345392a2c5 1; powercfg -setactive scheme_current | Out-Null }
     Revert = { powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 4d2b0152-7d5c-498b-88e2-34345392a2c5 15; powercfg -setactive scheme_current | Out-Null }
 }
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Modern/Connected Standby"; Category = "CPU"; Danger = $false
+    Description = "Desliga o Modern Standby (S0ix) e o Connected Standby, evitando que o PC continue meio ligado no stand-by."
+    Apply  = {
+        reg add "HKLM\System\CurrentControlSet\Control\Power" /v "PlatformAoAcOverride" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "CsEnabled" /t REG_DWORD /d 0 /f | Out-Null
+    }
+    Revert = {
+        reg add "HKLM\System\CurrentControlSet\Control\Power" /v "PlatformAoAcOverride" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "CsEnabled" /t REG_DWORD /d 1 /f | Out-Null
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Estimativa/Log de Energia"; Category = "CPU"; Danger = $false
+    Description = "Desliga a estimativa de consumo de energia e a telemetria de energia por aplicativo, reduzindo overhead em segundo plano."
+    Apply  = {
+        $k = "HKLM\SYSTEM\CurrentControlSet\Control\Power"
+        reg add $k /v "EnergyEstimationEnabled" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "$k\EnergyEstimation\TaggedEnergy" /v "DisableTaggedEnergyLogging" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "$k\EnergyEstimation\TaggedEnergy" /v "TelemetryMaxApplication" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "$k\EnergyEstimation\TaggedEnergy" /v "TelemetryMaxTagPerApplication" /t REG_DWORD /d 0 /f | Out-Null
+    }
+    Revert = {
+        $k = "HKLM\SYSTEM\CurrentControlSet\Control\Power"
+        reg add $k /v "EnergyEstimationEnabled" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "$k\EnergyEstimation\TaggedEnergy" /v "DisableTaggedEnergyLogging" /t REG_DWORD /d 0 /f | Out-Null
+        reg add "$k\EnergyEstimation\TaggedEnergy" /v "TelemetryMaxApplication" /t REG_DWORD /d 1 /f | Out-Null
+        reg add "$k\EnergyEstimation\TaggedEnergy" /v "TelemetryMaxTagPerApplication" /t REG_DWORD /d 1 /f | Out-Null
+    }
+}
 
 # -------------------------------------------------------------------------
 # GPU
@@ -903,10 +1213,86 @@ $Tweaks += [PSCustomObject]@{
     }
 }
 $Tweaks += [PSCustomObject]@{
-    Name = "Habilitar Hardware-Accelerated GPU Scheduling"; Category = "GPU"; Danger = $false
+    Name = "Habilitar Hardware-Accelerated GPU Scheduling"; Category = "InputLag"; Danger = $false
     Description = "Deixa a propria GPU gerenciar a fila de memoria de video, reduzindo latencia (Windows 10 2004 ou mais novo)."
     Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d 2 /f | Out-Null }
     Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d 1 /f | Out-Null }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "NVIDIA: Latencia e DMA Remapping"; Category = "InputLag"; Danger = $false
+    Description = "Zera as tolerancias de latencia da NVIDIA, desliga DMA remapping e o log interno do driver (nvlddmkm)."
+    Apply  = {
+        $k = "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000"
+        foreach ($v in "D3PCLatency","F1TransitionLatency","LOWLATENCY","Node3DLowLatency","RMDeepL1EntryLatencyUsec","RmGspcMaxFtuS","RmGspcMinFtuS","RmGspcPerioduS","RMLpwrEiIdleThresholdUs","RMLpwrGrIdleThresholdUs","RMLpwrGrRgIdleThresholdUs","RMLpwrMsIdleThresholdUs","VRDirectFlipDPCDelayUs","VRDirectFlipTimingMarginUs","VRDirectJITFlipMsHybridFlipDelayUs","vrrCursorMarginUs","vrrDeflickerMarginUs","vrrDeflickerMaxUs") {
+            reg add $k /v $v /t REG_DWORD /d 1 /f | Out-Null
+        }
+        reg add $k /v "PciLatencyTimerControl" /t REG_DWORD /d 32 /f | Out-Null
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters" /v "DmaRemappingCompatible" /t REG_DWORD /d 0 /f | Out-Null
+        foreach ($v in "LogWarningEntries","LogPagingEntries","LogEventEntries","LogErrorEntries") {
+            reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v $v /t REG_DWORD /d 0 /f | Out-Null
+        }
+    }
+    Revert = {
+        $k = "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000"
+        foreach ($v in "D3PCLatency","F1TransitionLatency","LOWLATENCY","Node3DLowLatency","PciLatencyTimerControl","RMDeepL1EntryLatencyUsec","RmGspcMaxFtuS","RmGspcMinFtuS","RmGspcPerioduS","RMLpwrEiIdleThresholdUs","RMLpwrGrIdleThresholdUs","RMLpwrGrRgIdleThresholdUs","RMLpwrMsIdleThresholdUs","VRDirectFlipDPCDelayUs","VRDirectFlipTimingMarginUs","VRDirectJITFlipMsHybridFlipDelayUs","vrrCursorMarginUs","vrrDeflickerMarginUs","vrrDeflickerMaxUs") {
+            reg delete $k /v $v /f 2>$null | Out-Null
+        }
+        reg delete "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters" /v "DmaRemappingCompatible" /f 2>$null | Out-Null
+        foreach ($v in "LogWarningEntries","LogPagingEntries","LogEventEntries","LogErrorEntries") {
+            reg delete "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v $v /f 2>$null | Out-Null
+        }
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "AMD: Recursos de Driver (Chill/Anti-Lag/Boost/SAM)"; Category = "GPU"; Danger = $false
+    Description = "Desliga Radeon Chill, Anti-Lag e Radeon Boost, e libera controles de energia/voltagem e Smart Access Memory no driver AMD."
+    Apply  = {
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdwddmg" /v "ChillEnabled" /t REG_DWORD /d 0 /f | Out-Null
+        $k = "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000"
+        reg add $k /v "KMD_DeLagEnabled" /t REG_DWORD /d 0 /f | Out-Null
+        reg add $k /v "KMD_RadeonBoostEnabled" /t REG_DWORD /d 0 /f | Out-Null
+        reg add $k /v "EnhancedSync" /t REG_DWORD /d 0 /f | Out-Null
+        reg add $k /v "SAMEnabled" /t REG_DWORD /d 1 /f | Out-Null
+        reg add $k /v "ForceConstantVoltage" /t REG_DWORD /d 1 /f | Out-Null
+        reg add $k /v "PowerTuningUnlock" /t REG_DWORD /d 1 /f | Out-Null
+        reg add $k /v "MaxPowerLimit" /t REG_DWORD /d 1 /f | Out-Null
+        reg add $k /v "FanCurveOptimized" /t REG_DWORD /d 1 /f | Out-Null
+        reg add $k /v "PerfStateMax" /t REG_DWORD /d 1 /f | Out-Null
+        reg add $k /v "RadeonOverlayEnabled" /t REG_DWORD /d 0 /f | Out-Null
+    }
+    Revert = {
+        reg delete "HKLM\SYSTEM\CurrentControlSet\Services\amdwddmg" /v "ChillEnabled" /f 2>$null | Out-Null
+        $k = "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000"
+        foreach ($v in "KMD_DeLagEnabled","KMD_RadeonBoostEnabled","EnhancedSync","SAMEnabled","ForceConstantVoltage","PowerTuningUnlock","MaxPowerLimit","FanCurveOptimized","PerfStateMax","RadeonOverlayEnabled") {
+            reg delete $k /v $v /f 2>$null | Out-Null
+        }
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Intel: Ajustes Adicionais de Overlay e Memoria (GMM)"; Category = "GPU"; Danger = $false
+    Description = "Complementa os ajustes de overlay/eDP da Intel e aumenta o segmento dedicado de memoria de video (GMM)."
+    Apply  = {
+        Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" -ErrorAction SilentlyContinue | Where-Object { (Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue).DriverDesc -match "Intel" } | ForEach-Object {
+            try {
+                Set-ItemProperty -Path $_.PSPath -Name "IncreaseFixedSegment" -Value 1 -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $_.PSPath -Name "AdaptiveVbEnabled" -Value 0 -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $_.PSPath -Name "DisablePFonDP" -Value 1 -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $_.PSPath -Name "EnableCompensationForDVI" -Value 1 -ErrorAction SilentlyContinue
+            } catch {}
+        }
+        reg add "HKLM\Software\Intel\GMM" /v "DedicatedSegmentSize" /t REG_DWORD /d 512 /f | Out-Null
+    }
+    Revert = {
+        Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" -ErrorAction SilentlyContinue | Where-Object { (Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue).DriverDesc -match "Intel" } | ForEach-Object {
+            try {
+                Set-ItemProperty -Path $_.PSPath -Name "IncreaseFixedSegment" -Value 0 -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $_.PSPath -Name "AdaptiveVbEnabled" -Value 1 -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $_.PSPath -Name "DisablePFonDP" -Value 0 -ErrorAction SilentlyContinue
+                Set-ItemProperty -Path $_.PSPath -Name "EnableCompensationForDVI" -Value 0 -ErrorAction SilentlyContinue
+            } catch {}
+        }
+        reg delete "HKLM\Software\Intel\GMM" /v "DedicatedSegmentSize" /f 2>$null | Out-Null
+    }
 }
 
 # -------------------------------------------------------------------------
@@ -944,8 +1330,16 @@ $Tweaks += [PSCustomObject]@{
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Ajustar SvcHostSplitThresholdInKB"; Category = "Memoria"; Danger = $false
-    Description = "Faz o Windows agrupar menos processos em segundo plano quando ha bastante RAM disponivel (16GB+)."
-    Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\Control" /v "SvcHostSplitThresholdInKB" /t REG_DWORD /d 16777216 /f | Out-Null }
+    Description = "Detecta a RAM instalada e ajusta o Windows pra agrupar menos processos svchost em segundo plano quanto mais RAM voce tiver."
+    Apply  = {
+        try {
+            $ramKB = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1024)
+            if ($ramKB -lt 1) { $ramKB = 16777216 }
+            reg add "HKLM\SYSTEM\CurrentControlSet\Control" /v "SvcHostSplitThresholdInKB" /t REG_DWORD /d $ramKB /f | Out-Null
+        } catch {
+            reg add "HKLM\SYSTEM\CurrentControlSet\Control" /v "SvcHostSplitThresholdInKB" /t REG_DWORD /d 16777216 /f | Out-Null
+        }
+    }
     Revert = { reg delete "HKLM\SYSTEM\CurrentControlSet\Control" /v "SvcHostSplitThresholdInKB" /f 2>$null | Out-Null }
 }
 
@@ -953,7 +1347,7 @@ $Tweaks += [PSCustomObject]@{
 # TECLADO E MOUSE
 # -------------------------------------------------------------------------
 $Tweaks += [PSCustomObject]@{
-    Name = "Desabilitar Aceleracao do Mouse"; Category = "TecladoMouse"; Danger = $false
+    Name = "Desabilitar Aceleracao do Mouse"; Category = "InputLag"; Danger = $false
     Description = "Deixa o mouse com resposta 1:1, sem acelerar o movimento - recomendado pra jogos."
     Apply  = {
         reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d 0 /f | Out-Null
@@ -967,7 +1361,7 @@ $Tweaks += [PSCustomObject]@{
     }
 }
 $Tweaks += [PSCustomObject]@{
-    Name = "Teclado: Delay Minimo / Repeticao Maxima"; Category = "TecladoMouse"; Danger = $false
+    Name = "Teclado: Delay Minimo / Repeticao Maxima"; Category = "InputLag"; Danger = $false
     Description = "Deixa o teclado mais responsivo, com repeticao de tecla mais rapida."
     Apply  = {
         reg add "HKCU\Control Panel\Keyboard" /v "KeyboardDelay" /t REG_SZ /d 0 /f | Out-Null
@@ -995,7 +1389,7 @@ $Tweaks += [PSCustomObject]@{
     }
 }
 $Tweaks += [PSCustomObject]@{
-    Name = "Prioridade Alta para CSRSS (drivers de KBM)"; Category = "TecladoMouse"; Danger = $false
+    Name = "Prioridade Alta para CSRSS (drivers de KBM)"; Category = "InputLag"; Danger = $false
     Description = "Da mais prioridade ao processo que le a entrada do teclado e mouse."
     Apply  = {
         $k = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions"
@@ -1009,7 +1403,7 @@ $Tweaks += [PSCustomObject]@{
     }
 }
 $Tweaks += [PSCustomObject]@{
-    Name = "Data Queue Size do Mouse/Teclado"; Category = "TecladoMouse"; Danger = $false
+    Name = "Data Queue Size do Mouse/Teclado"; Category = "InputLag"; Danger = $false
     Description = "Ajusta a fila de dados do mouse e teclado - pode ajudar em dispositivos com polling rate alto."
     Apply  = {
         reg add "HKLM\SYSTEM\CurrentControlSet\Services\mouclass\Parameters" /v "MouseDataQueueSize" /t REG_DWORD /d 80 /f | Out-Null
@@ -1021,17 +1415,103 @@ $Tweaks += [PSCustomObject]@{
     }
 }
 $Tweaks += [PSCustomObject]@{
-    Name = "Desabilitar Suspensao Seletiva USB"; Category = "TecladoMouse"; Danger = $false
+    Name = "Desabilitar Suspensao Seletiva USB"; Category = "InputLag"; Danger = $false
     Description = "Impede que as portas USB durmam sozinhas - evita mouse/teclado travando por um instante."
     Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\Services\USB" /v "DisableSelectiveSuspend" /t REG_DWORD /d 1 /f | Out-Null }
     Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Services\USB" /v "DisableSelectiveSuspend" /t REG_DWORD /d 0 /f | Out-Null }
 }
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Economia de Energia em Dispositivos PCI/USB"; Category = "InputLag"; Danger = $false
+    Description = "Desliga a suspensao seletiva e o D3Cold em todos os dispositivos PCI (inclui hubs USB de teclado/mouse), evitando microtravadas ao sair do idle."
+    Apply  = {
+        $devs = powershell -NoProfile -Command "Get-PnpDevice -PresentOnly | Where-Object { `$_.InstanceId -like 'PCI\VEN_*' } | ForEach-Object { `$_.InstanceId }"
+        foreach ($id in $devs) {
+            $regPath = "HKLM\SYSTEM\CurrentControlSet\Enum\$id\Device Parameters"
+            foreach ($v in "AllowIdleIrpInD3","D3ColdSupported","DeviceSelectiveSuspended","EnableSelectiveSuspend","EnhancedPowerManagementEnabled","SelectiveSuspendEnabled","SelectiveSuspendOn") {
+                reg add $regPath /v $v /t REG_DWORD /d 0 /f 2>$null | Out-Null
+            }
+        }
+    }
+    Revert = {
+        $devs = powershell -NoProfile -Command "Get-PnpDevice -PresentOnly | Where-Object { `$_.InstanceId -like 'PCI\VEN_*' } | ForEach-Object { `$_.InstanceId }"
+        foreach ($id in $devs) {
+            $regPath = "HKLM\SYSTEM\CurrentControlSet\Enum\$id\Device Parameters"
+            foreach ($v in "AllowIdleIrpInD3","D3ColdSupported","DeviceSelectiveSuspended","EnableSelectiveSuspend","EnhancedPowerManagementEnabled","SelectiveSuspendEnabled","SelectiveSuspendOn") {
+                reg delete $regPath /v $v /f 2>$null | Out-Null
+            }
+        }
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Prioridade de Thread para Drivers USB/GPU/Rede"; Category = "InputLag"; Danger = $true
+    Description = "Aumenta a prioridade de thread dos drivers USB, NVIDIA e de rede - pode reduzir input lag, mas e um ajuste nao-oficial e pode causar instabilidade em alguns PCs."
+    Apply  = {
+        foreach ($svc in "usbxhci","USBHUB3","nvlddmkm","NDIS") {
+            reg add "HKLM\SYSTEM\CurrentControlSet\Services\$svc\Parameters" /v "ThreadPriority" /t REG_DWORD /d 31 /f | Out-Null
+        }
+    }
+    Revert = {
+        foreach ($svc in "usbxhci","USBHUB3","nvlddmkm","NDIS") {
+            reg delete "HKLM\SYSTEM\CurrentControlSet\Services\$svc\Parameters" /v "ThreadPriority" /f 2>$null | Out-Null
+        }
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar Gerenciamento de Energia do Mouse/Teclado (HID)"; Category = "InputLag"; Danger = $false
+    Description = "Desmarca o 'Permitir que o computador desligue este dispositivo' direto nos dispositivos de mouse e teclado (nao so no controlador USB pai) - a mesma opcao do Gerenciador de Dispositivos, so que pra todos de uma vez."
+    Apply  = {
+        $devs = Get-PnpDevice -PresentOnly -Class Mouse,Keyboard -ErrorAction SilentlyContinue
+        foreach ($d in $devs) {
+            $regPath = "HKLM\SYSTEM\CurrentControlSet\Enum\$($d.InstanceId)\Device Parameters"
+            foreach ($v in "AllowIdleIrpInD3","D3ColdSupported","DeviceSelectiveSuspended","EnableSelectiveSuspend","EnhancedPowerManagementEnabled","SelectiveSuspendEnabled","SelectiveSuspendOn") {
+                reg add $regPath /v $v /t REG_DWORD /d 0 /f 2>$null | Out-Null
+            }
+        }
+    }
+    Revert = {
+        $devs = Get-PnpDevice -PresentOnly -Class Mouse,Keyboard -ErrorAction SilentlyContinue
+        foreach ($d in $devs) {
+            $regPath = "HKLM\SYSTEM\CurrentControlSet\Enum\$($d.InstanceId)\Device Parameters"
+            foreach ($v in "AllowIdleIrpInD3","D3ColdSupported","DeviceSelectiveSuspended","EnableSelectiveSuspend","EnhancedPowerManagementEnabled","SelectiveSuspendEnabled","SelectiveSuspendOn") {
+                reg delete $regPath /v $v /f 2>$null | Out-Null
+            }
+        }
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Desabilitar USB Selective Suspend (Plano de Energia)"; Category = "InputLag"; Danger = $false
+    Description = "Desliga a opcao 'Configuracao de suspensao seletiva USB' no proprio plano de energia (nao so no registro), garantindo que a porta do mouse/teclado nunca durma."
+    Apply  = {
+        powercfg /setacvalueindex scheme_current 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0 | Out-Null
+        powercfg /setdcvalueindex scheme_current 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0 | Out-Null
+        powercfg /setactive scheme_current | Out-Null
+    }
+    Revert = {
+        powercfg /setacvalueindex scheme_current 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 1 | Out-Null
+        powercfg /setdcvalueindex scheme_current 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 1 | Out-Null
+        powercfg /setactive scheme_current | Out-Null
+    }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Curva de Mouse Linear 1:1 (SmoothMouseXCurve/YCurve)"; Category = "InputLag"; Danger = $false
+    Description = "Remove a curva de aceleracao que o Windows aplica por baixo dos panos mesmo com o mouse em 'velocidade padrao' - complementa o tweak de Desabilitar Aceleracao do Mouse pra garantir 1 pixel movido = 1 pixel na tela."
+    Apply  = {
+        $xCurve = ([byte[]](0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xa0,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x40,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x80,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x05,0x00,0x00,0x00,0x00,0x00))
+        $yCurve = ([byte[]](0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x66,0xa6,0x02,0x00,0x00,0x00,0x00,0x00,0xcd,0x4c,0x05,0x00,0x00,0x00,0x00,0x00,0xa0,0x99,0x0a,0x00,0x00,0x00,0x00,0x00,0x38,0x33,0x15,0x00,0x00,0x00,0x00,0x00))
+        Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name "SmoothMouseXCurve" -Value $xCurve -Type Binary
+        Set-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name "SmoothMouseYCurve" -Value $yCurve -Type Binary
+    }
+    Revert = {
+        Remove-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name "SmoothMouseXCurve" -ErrorAction SilentlyContinue
+        Remove-ItemProperty -Path "HKCU:\Control Panel\Mouse" -Name "SmoothMouseYCurve" -ErrorAction SilentlyContinue
+    }
+}
 
 # -------------------------------------------------------------------------
-# LIMPEZA
+# ADICIONAL (limpeza + QOL + extras)
 # -------------------------------------------------------------------------
 $Tweaks += [PSCustomObject]@{
-    Name = "Remover Dispositivos Fantasma (desconhecidos)"; Category = "Limpeza"; Danger = $false
+    Name = "Remover Dispositivos Fantasma (desconhecidos)"; Category = "Adicional"; Danger = $false
     Description = "Remove dispositivos fantasma (status Desconhecido) do gerenciador de dispositivos."
     Apply  = {
         try {
@@ -1043,13 +1523,13 @@ $Tweaks += [PSCustomObject]@{
     Revert = { Write-Log "  [INFO] Nao ha reversao - Windows detecta os dispositivos de novo se forem conectados." }
 }
 $Tweaks += [PSCustomObject]@{
-    Name = "Abrir Limpeza de Disco do Windows"; Category = "Limpeza"; Danger = $false
+    Name = "Abrir Limpeza de Disco do Windows"; Category = "Adicional"; Danger = $false
     Description = "Abre a Limpeza de Disco do Windows pra voce escolher o que apagar."
     Apply  = { Start-Process cleanmgr.exe }
     Revert = { Write-Log "  [INFO] Essa opcao so abre a ferramenta nativa do Windows - nada a reverter." }
 }
 $Tweaks += [PSCustomObject]@{
-    Name = "Limpar Pasta Temp do Usuario e do Windows"; Category = "Limpeza"; Danger = $false
+    Name = "Limpar Pasta Temp do Usuario e do Windows"; Category = "Adicional"; Danger = $false
     Description = "Apaga arquivos temporarios do sistema e do seu usuario."
     Apply  = {
         Get-ChildItem -Path $env:TEMP, "$env:WINDIR\Temp" -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
@@ -1057,10 +1537,6 @@ $Tweaks += [PSCustomObject]@{
     }
     Revert = { Write-Log "  [INFO] Limpeza de temporarios nao tem reversao." }
 }
-
-# -------------------------------------------------------------------------
-# ADICIONAL
-# -------------------------------------------------------------------------
 $Tweaks += [PSCustomObject]@{
     Name = "Ativar Modo Escuro"; Category = "Adicional"; Danger = $false
     Description = "Aplica o tema escuro em todo o sistema e nos aplicativos."
@@ -1320,7 +1796,7 @@ $categoryMeta = [ordered]@{
     "GPU"           = "🎨  GPU"
     "Memoria"       = "💾  Memoria"
     "TecladoMouse"  = "🖱️  Teclado e Mouse"
-    "Limpeza"       = "🧼  Limpeza"
+    "InputLag"      = "⚡  Input Lag"
     "Adicional"     = "➕  Adicional"
 }
 
