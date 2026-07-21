@@ -159,8 +159,6 @@ $DebloatApps = @(
     @{ Display = "Seu Telefone (Phone Link)"; Pattern = "Microsoft.YourPhone" }
     @{ Display = "Groove Music";              Pattern = "Microsoft.ZuneMusic" }
     @{ Display = "Mail e Calendario";         Pattern = "microsoft.windowscommunicationsapps" }
-    @{ Display = "Cortana";                   Pattern = "Microsoft.549981C3F5F10" }
-    @{ Display = "Copilot";                   Pattern = "Microsoft.Windows.Ai.Copilot.Provider" }
     @{ Display = "Sway";                      Pattern = "Sway" }
     @{ Display = "Drawboard PDF";             Pattern = "Drawboard PDF" }
     @{ Display = "Bing (todos)";              Pattern = "bing" }
@@ -184,7 +182,17 @@ $Tweaks += [PSCustomObject]@{
         reg add $k /v "Scheduling Category" /t REG_SZ /d "High" /f | Out-Null
         reg add $k /v "SFIO Priority" /t REG_SZ /d "High" /f | Out-Null
     }
-    Revert = {
+    Check = {
+        $k = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
+        try {
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'GPU Priority' -ErrorAction SilentlyContinue).'GPU Priority' -ne 8) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'Priority' -ErrorAction SilentlyContinue).'Priority' -ne 6) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'Scheduling Category' -ErrorAction SilentlyContinue).'Scheduling Category' -ne 'High') { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'SFIO Priority' -ErrorAction SilentlyContinue).'SFIO Priority' -ne 'High') { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         $k = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
         reg add $k /v "GPU Priority" /t REG_DWORD /d 8 /f | Out-Null
         reg add $k /v "Priority" /t REG_DWORD /d 2 /f | Out-Null
@@ -196,7 +204,13 @@ $Tweaks += [PSCustomObject]@{
     Name = "Win32PrioritySeparation"; Category = "InputLag"; Danger = $false
     Description = "Prioriza o app que esta em foco na tela (jogos) em vez de apps em segundo plano."
     Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 0x26 /f | Out-Null }
-    Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 0xa /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" -Name 'Win32PrioritySeparation' -ErrorAction SilentlyContinue).'Win32PrioritySeparation' -ne 0x26) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 0xa /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Reduzir tempo de resposta de apps travados"; Category = "Geral"; Danger = $false
@@ -208,7 +222,17 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKCU\Control Panel\Desktop" /v "MenuShowDelay" /t REG_SZ /d 0 /f | Out-Null
         reg add "HKLM\SYSTEM\CurrentControlSet\Control" /v "WaitToKillServiceTimeout" /t REG_SZ /d "1000" /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Desktop" -Name 'AutoEndTasks' -ErrorAction SilentlyContinue).'AutoEndTasks' -ne '1') { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Desktop" -Name 'HungAppTimeout' -ErrorAction SilentlyContinue).'HungAppTimeout' -ne '1000') { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Desktop" -Name 'WaitToKillAppTimeout' -ErrorAction SilentlyContinue).'WaitToKillAppTimeout' -ne '1000') { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Desktop" -Name 'MenuShowDelay' -ErrorAction SilentlyContinue).'MenuShowDelay' -ne '0') { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control" -Name 'WaitToKillServiceTimeout' -ErrorAction SilentlyContinue).'WaitToKillServiceTimeout' -ne '1000') { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKCU\Control Panel\Desktop" /v "AutoEndTasks" /t REG_SZ /d 0 /f | Out-Null
         reg add "HKCU\Control Panel\Desktop" /v "HungAppTimeout" /t REG_SZ /d "5000" /f | Out-Null
         reg add "HKCU\Control Panel\Desktop" /v "WaitToKillAppTimeout" /t REG_SZ /d "5000" /f | Out-Null
@@ -229,7 +253,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync" /v "DisableSettingSync" /t REG_DWORD /d 2 /f | Out-Null
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync" /v "DisableSettingSyncUserOverride" /t REG_DWORD /d 1 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync" -Name 'DisableSettingSync' -ErrorAction SilentlyContinue).'DisableSettingSync' -ne 2) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync" -Name 'DisableSettingSyncUserOverride' -ErrorAction SilentlyContinue).'DisableSettingSyncUserOverride' -ne 1) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync" /v "DisableSettingSync" /f 2>$null | Out-Null
         reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\SettingSync" /v "DisableSettingSyncUserOverride" /f 2>$null | Out-Null
     }
@@ -241,7 +272,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "GlobalUserDisabled" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "BackgroundAppGlobalToggle" /t REG_DWORD /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Name 'GlobalUserDisabled' -ErrorAction SilentlyContinue).'GlobalUserDisabled' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name 'BackgroundAppGlobalToggle' -ErrorAction SilentlyContinue).'BackgroundAppGlobalToggle' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "GlobalUserDisabled" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "BackgroundAppGlobalToggle" /t REG_DWORD /d 1 /f | Out-Null
     }
@@ -266,7 +304,13 @@ $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Transparencia Visual"; Category = "Geral"; Danger = $false
     Description = "Desliga o efeito de transparencia dos menus, liberando um pouco de GPU/CPU."
     Apply  = { reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "EnableTransparency" /t REG_DWORD /d 0 /f | Out-Null }
-    Revert = { reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "EnableTransparency" /t REG_DWORD /d 1 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name 'EnableTransparency' -ErrorAction SilentlyContinue).'EnableTransparency' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "EnableTransparency" /t REG_DWORD /d 1 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Notificacoes"; Category = "Geral"; Danger = $false
@@ -275,7 +319,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v "ToastEnabled" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKCU\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v "DisableNotificationCenter" /t REG_DWORD /d 1 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" -Name 'ToastEnabled' -ErrorAction SilentlyContinue).'ToastEnabled' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Policies\Microsoft\Windows\Explorer" -Name 'DisableNotificationCenter' -ErrorAction SilentlyContinue).'DisableNotificationCenter' -ne 1) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v "ToastEnabled" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKCU\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v "DisableNotificationCenter" /t REG_DWORD /d 0 /f | Out-Null
     }
@@ -293,7 +344,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability" /v "TimeStampInterval" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability" /v "IoPriority" /t REG_DWORD /d 3 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability" -Name 'TimeStampInterval' -ErrorAction SilentlyContinue).'TimeStampInterval' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability" -Name 'IoPriority' -ErrorAction SilentlyContinue).'IoPriority' -ne 3) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability" /v "TimeStampInterval" /t REG_DWORD /d 1440 /f | Out-Null
         reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Reliability" /v "IoPriority" /f 2>$null | Out-Null
     }
@@ -348,13 +406,25 @@ $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Biometria"; Category = "Geral"; Danger = $false
     Description = "Desliga o Windows Hello / leitura biometrica via politica de grupo."
     Apply  = { reg add "HKLM\SOFTWARE\Policies\Microsoft\Biometrics" /v "Enabled" /t REG_DWORD /d 0 /f | Out-Null }
-    Revert = { reg add "HKLM\SOFTWARE\Policies\Microsoft\Biometrics" /v "Enabled" /t REG_DWORD /d 1 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Policies\Microsoft\Biometrics" -Name 'Enabled' -ErrorAction SilentlyContinue).'Enabled' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SOFTWARE\Policies\Microsoft\Biometrics" /v "Enabled" /t REG_DWORD /d 1 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Ajustar System Responsiveness"; Category = "InputLag"; Danger = $false
     Description = "Reduz a fatia de CPU reservada para tarefas em segundo plano, priorizando multimidia/jogos."
     Apply  = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "SystemResponsiveness" /t REG_DWORD /d 10 /f | Out-Null }
-    Revert = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "SystemResponsiveness" /t REG_DWORD /d 20 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name 'SystemResponsiveness' -ErrorAction SilentlyContinue).'SystemResponsiveness' -ne 10) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "SystemResponsiveness" /t REG_DWORD /d 20 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Registrar Apenas Eventos de Falha Importantes"; Category = "Geral"; Danger = $false
@@ -381,7 +451,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\System" /v "AllowExperimentation" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\System\AllowExperimentation" /v "value" /t REG_DWORD /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\System" -Name 'AllowExperimentation' -ErrorAction SilentlyContinue).'AllowExperimentation' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\PolicyManager\default\System\AllowExperimentation" -Name 'value' -ErrorAction SilentlyContinue).'value' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\System" /v "AllowExperimentation" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\System\AllowExperimentation" /v "value" /t REG_DWORD /d 1 /f | Out-Null
     }
@@ -397,7 +474,18 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CDP" /v "CdpSessionUserAuthzPolicy" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CDP" /v "NearShareChannelUserAuthzPolicy" /t REG_DWORD /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" -Name 'EnableFeeds' -ErrorAction SilentlyContinue).'EnableFeeds' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Policies\Microsoft" -Name 'AllowNewsAndInterests' -ErrorAction SilentlyContinue).'AllowNewsAndInterests' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows\System" -Name 'EnableActivityFeed' -ErrorAction SilentlyContinue).'EnableActivityFeed' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo" -Name 'Enabled' -ErrorAction SilentlyContinue).'Enabled' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CDP" -Name 'CdpSessionUserAuthzPolicy' -ErrorAction SilentlyContinue).'CdpSessionUserAuthzPolicy' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\CDP" -Name 'NearShareChannelUserAuthzPolicy' -ErrorAction SilentlyContinue).'NearShareChannelUserAuthzPolicy' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v "EnableFeeds" /t REG_DWORD /d 1 /f | Out-Null
         reg delete "HKLM\SOFTWARE\Policies\Microsoft" /v "AllowNewsAndInterests" /f 2>$null | Out-Null
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "EnableActivityFeed" /t REG_DWORD /d 1 /f | Out-Null
@@ -410,7 +498,13 @@ $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Manutencao Automatica"; Category = "Geral"; Danger = $false
     Description = "Impede que o Windows rode a manutencao automatica (limpeza/scan) enquanto voce esta jogando."
     Apply  = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance" /v "MaintenanceDisabled" /t REG_DWORD /d 1 /f | Out-Null }
-    Revert = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance" /v "MaintenanceDisabled" /t REG_DWORD /d 0 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance" -Name 'MaintenanceDisabled' -ErrorAction SilentlyContinue).'MaintenanceDisabled' -ne 1) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance" /v "MaintenanceDisabled" /t REG_DWORD /d 0 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Ajustar Compatibilidade de Apps (AppCompat)"; Category = "Geral"; Danger = $false
@@ -476,7 +570,13 @@ $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Otimizacoes de VRR"; Category = "Geral"; Danger = $false
     Description = "Desliga o VRR Optimize automatico do DirectX, util se voce ja controla VRR pelo driver da GPU."
     Apply  = { reg add "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" /t REG_SZ /d "VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;" /f | Out-Null }
-    Revert = { reg delete "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" /f 2>$null | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" -Name 'DirectXUserGlobalSettings' -ErrorAction SilentlyContinue).'DirectXUserGlobalSettings' -ne 'VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;') { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg delete "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" /f 2>$null | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Busca Automatica de Drivers"; Category = "Geral"; Danger = $false
@@ -485,7 +585,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKLM\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\PolicyState" /v "ExcludeWUDrivers" /t REG_DWORD /d 1 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" -Name 'SearchOrderConfig' -ErrorAction SilentlyContinue).'SearchOrderConfig' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\PolicyState" -Name 'ExcludeWUDrivers' -ErrorAction SilentlyContinue).'ExcludeWUDrivers' -ne 1) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKLM\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\PolicyState" /v "ExcludeWUDrivers" /t REG_DWORD /d 0 /f | Out-Null
     }
@@ -497,7 +604,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKCU\SOFTWARE\Microsoft\GameBar" /v "AllowAutoGameMode" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKCU\SOFTWARE\Microsoft\GameBar" /v "AutoGameModeEnabled" /t REG_DWORD /d 1 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\GameBar" -Name 'AllowAutoGameMode' -ErrorAction SilentlyContinue).'AllowAutoGameMode' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\GameBar" -Name 'AutoGameModeEnabled' -ErrorAction SilentlyContinue).'AutoGameModeEnabled' -ne 1) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKCU\SOFTWARE\Microsoft\GameBar" /v "AllowAutoGameMode" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKCU\SOFTWARE\Microsoft\GameBar" /v "AutoGameModeEnabled" /t REG_DWORD /d 0 /f | Out-Null
     }
@@ -514,7 +628,15 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" /v "AppCaptureEnabled" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v "AllowGameDVR" /t REG_DWORD /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\System\GameConfigStore" -Name 'GameDVR_Enabled' -ErrorAction SilentlyContinue).'GameDVR_Enabled' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" -Name 'AppCaptureEnabled' -ErrorAction SilentlyContinue).'AppCaptureEnabled' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" -Name 'AllowGameDVR' -ErrorAction SilentlyContinue).'AllowGameDVR' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" /v "AppCaptureEnabled" /t REG_DWORD /d 1 /f | Out-Null
         reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v "AllowGameDVR" /f 2>$null | Out-Null
@@ -524,13 +646,25 @@ $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Servicos Xbox em segundo plano"; Category = "Debloat"; Danger = $false
     Description = "Desliga servicos do Xbox que ficam rodando mesmo sem voce abrir nenhum jogo."
     Apply  = { foreach ($s in "XblAuthManager", "XblGameSave", "XboxNetApiSvc", "XboxGipSvc") { Set-ServiceStart -ServiceName $s -StartValue 4 } }
-    Revert = { foreach ($s in "XblAuthManager", "XblGameSave", "XboxNetApiSvc", "XboxGipSvc") { Set-ServiceStart -ServiceName $s -StartValue 3 } }
+    Check = {
+        foreach ($s in "XblAuthManager", "XblGameSave", "XboxNetApiSvc", "XboxGipSvc") {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Services\$s" -Name 'Start' -ErrorAction SilentlyContinue).'Start' -ne 4) { return $false }
+        }
+        return $true
+    }
+        Revert = { foreach ($s in "XblAuthManager", "XblGameSave", "XboxNetApiSvc", "XboxGipSvc") { Set-ServiceStart -ServiceName $s -StartValue 3 } }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Bluetooth (Desligar servicos)"; Category = "Debloat"; Danger = $false
     Description = "Desliga o Bluetooth do Windows - use so se voce nao tem ou nao usa bluetooth."
     Apply  = { foreach ($s in "BTAGService", "bthserv", "BthAvctpSvc", "BluetoothUserService") { Set-ServiceStart -ServiceName $s -StartValue 4 } }
-    Revert = {
+    Check = {
+        foreach ($s in "BTAGService", "bthserv", "BthAvctpSvc", "BluetoothUserService") {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Services\$s" -Name 'Start' -ErrorAction SilentlyContinue).'Start' -ne 4) { return $false }
+        }
+        return $true
+    }
+        Revert = {
         Set-ServiceStart -ServiceName "BTAGService" -StartValue 3
         Set-ServiceStart -ServiceName "bthserv" -StartValue 2
         Set-ServiceStart -ServiceName "BthAvctpSvc" -StartValue 3
@@ -545,7 +679,13 @@ $Tweaks += [PSCustomObject]@{
         schtasks /Change /TN "Microsoft\Windows\Printing\EduPrintProv" /Disable 2>$null | Out-Null
         schtasks /Change /TN "Microsoft\Windows\Printing\PrinterCleanupTask" /Disable 2>$null | Out-Null
     }
-    Revert = {
+    Check = {
+        foreach ($s in "Spooler", "PrintNotify", "MapsBroker") {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Services\$s" -Name 'Start' -ErrorAction SilentlyContinue).'Start' -ne 4) { return $false }
+        }
+        return $true
+    }
+        Revert = {
         Set-ServiceStart -ServiceName "Spooler" -StartValue 2
         Set-ServiceStart -ServiceName "PrintNotify" -StartValue 3
         Set-ServiceStart -ServiceName "MapsBroker" -StartValue 3
@@ -592,7 +732,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Error Reporting" /v "Disabled" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Error Reporting" /v "DoReport" /t REG_DWORD /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Error Reporting" -Name 'Disabled' -ErrorAction SilentlyContinue).'Disabled' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Error Reporting" -Name 'DoReport' -ErrorAction SilentlyContinue).'DoReport' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Error Reporting" /v "Disabled" /f 2>$null | Out-Null
         reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Error Reporting" /v "DoReport" /f 2>$null | Out-Null
     }
@@ -607,7 +754,17 @@ $Tweaks += [PSCustomObject]@{
         reg add $k /v "UploadUserActivities" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo" /v "Enabled" /t REG_DWORD /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        $k = "HKLM\SOFTWARE\Policies\Microsoft\Windows\System"
+        try {
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'EnableActivityFeed' -ErrorAction SilentlyContinue).'EnableActivityFeed' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'PublishUserActivities' -ErrorAction SilentlyContinue).'PublishUserActivities' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'UploadUserActivities' -ErrorAction SilentlyContinue).'UploadUserActivities' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo" -Name 'Enabled' -ErrorAction SilentlyContinue).'Enabled' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         $k = "HKLM\SOFTWARE\Policies\Microsoft\Windows\System"
         reg add $k /v "EnableActivityFeed" /t REG_DWORD /d 1 /f | Out-Null
         reg add $k /v "PublishUserActivities" /t REG_DWORD /d 1 /f | Out-Null
@@ -622,7 +779,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "EnableSmartScreen" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v "SmartScreenEnabled" /t REG_SZ /d "Off" /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Policies\Microsoft\Windows\System" -Name 'EnableSmartScreen' -ErrorAction SilentlyContinue).'EnableSmartScreen' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" -Name 'SmartScreenEnabled' -ErrorAction SilentlyContinue).'SmartScreenEnabled' -ne 'Off') { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "EnableSmartScreen" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v "SmartScreenEnabled" /t REG_SZ /d "On" /f | Out-Null
     }
@@ -634,7 +798,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKLM\SOFTWARE\Policies\Microsoft\WindowsStore" /v "DisableStoreApps" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config" /v "DODownloadMode" /t REG_DWORD /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Policies\Microsoft\WindowsStore" -Name 'DisableStoreApps' -ErrorAction SilentlyContinue).'DisableStoreApps' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config" -Name 'DODownloadMode' -ErrorAction SilentlyContinue).'DODownloadMode' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKLM\SOFTWARE\Policies\Microsoft\WindowsStore" /v "DisableStoreApps" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config" /v "DODownloadMode" /t REG_DWORD /d 1 /f | Out-Null
     }
@@ -654,6 +825,38 @@ foreach ($app in $DebloatApps) {
             Write-Log "  [INFO] Apps removidos nao voltam sozinhos - reinstale pela Microsoft Store se precisar."
         }.GetNewClosure()
     }
+}
+
+function Invoke-RemoteRemover {
+    param([string]$Url, [string]$FileName)
+    $dest = Join-Path $env:TEMP $FileName
+    Invoke-WebRequest -Uri $Url -OutFile $dest -UseBasicParsing
+    Start-Process -FilePath $dest -Verb RunAs -Wait
+}
+
+$Tweaks += [PSCustomObject]@{
+    Name = "Remover: Cortana (Completo + Bloqueio)"; Category = "Debloat"; Danger = $false
+    Description = "Baixa e executa o removedor dedicado de Cortana do repositorio - remove o pacote, o provisionamento, atalhos e bloqueia reinstalacao via politica. Abre uma janela de admin e pede uma tecla no final."
+    Apply  = { Invoke-RemoteRemover -Url "https://github.com/ysamim154-sys/lait-tweaks/raw/refs/heads/main/removedor%20de%20cortana.bat" -FileName "lait_remover_cortana.bat" }
+    Revert = { Write-Log "  [INFO] Remocao via script nao tem reversao automatica - reinstale/reative pela politica AllowCortana se precisar." }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Remover: Copilot (Completo + Bloqueio)"; Category = "Debloat"; Danger = $false
+    Description = "Baixa e executa o removedor dedicado do Copilot do repositorio - remove o pacote, o provisionamento, a sidebar do Edge e bloqueia reinstalacao via politica. Abre uma janela de admin e pede uma tecla no final."
+    Apply  = { Invoke-RemoteRemover -Url "https://github.com/ysamim154-sys/lait-tweaks/raw/refs/heads/main/remover%20copilot.bat" -FileName "lait_remover_copilot.bat" }
+    Revert = { Write-Log "  [INFO] Remocao via script nao tem reversao automatica - reinstale/reative pela politica TurnOffWindowsCopilot se precisar." }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Remover: Microsoft Edge"; Category = "Debloat"; Danger = $true
+    Description = "Baixa e executa o removedor dedicado do Edge do repositorio. Cuidado: alguns componentes do Windows (WebView2, links da Store) dependem do Edge - so use se tiver outro navegador padrao definido."
+    Apply  = { Invoke-RemoteRemover -Url "https://github.com/ysamim154-sys/lait-tweaks/raw/refs/heads/main/remover%20edge.bat" -FileName "lait_remover_edge.bat" }
+    Revert = { Write-Log "  [INFO] Remocao via script nao tem reversao automatica - reinstale o Edge pelo site da Microsoft se precisar." }
+}
+$Tweaks += [PSCustomObject]@{
+    Name = "Remover: OneDrive"; Category = "Debloat"; Danger = $false
+    Description = "Baixa e executa o removedor dedicado do OneDrive do repositorio - desinstala o app, remove atalhos e a integracao com o Explorer."
+    Apply  = { Invoke-RemoteRemover -Url "https://github.com/ysamim154-sys/lait-tweaks/raw/refs/heads/main/remover%20onedrive.bat" -FileName "lait_remover_onedrive.bat" }
+    Revert = { Write-Log "  [INFO] Remocao via script nao tem reversao automatica - reinstale o OneDrive pelo site da Microsoft se precisar." }
 }
 
 # -------------------------------------------------------------------------
@@ -782,7 +985,16 @@ $Tweaks += [PSCustomObject]@{
         reg add $k /v "DefaultTTL" /t REG_DWORD /d 64 /f | Out-Null
         netsh int tcp set supplemental internet congestionprovider=ctcp | Out-Null
     }
-    Revert = {
+    Check = {
+        $k = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"
+        try {
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'MaxUserPort' -ErrorAction SilentlyContinue).'MaxUserPort' -ne 65534) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'TcpTimedWaitDelay' -ErrorAction SilentlyContinue).'TcpTimedWaitDelay' -ne 30) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'DefaultTTL' -ErrorAction SilentlyContinue).'DefaultTTL' -ne 64) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         $k = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"
         reg delete $k /v "MaxUserPort" /f 2>$null | Out-Null
         reg delete $k /v "TcpTimedWaitDelay" /f 2>$null | Out-Null
@@ -826,7 +1038,13 @@ $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar IPv6"; Category = "Rede"; Danger = $false
     Description = "Desativa o IPv6 - util se sua rede so usa IPv4."
     Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\services\TCPIP6\Parameters" /v "DisabledComponents" /t REG_DWORD /d 255 /f | Out-Null }
-    Revert = { reg delete "HKLM\SYSTEM\CurrentControlSet\services\TCPIP6\Parameters" /v "DisabledComponents" /f 2>$null | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\services\TCPIP6\Parameters" -Name 'DisabledComponents' -ErrorAction SilentlyContinue).'DisabledComponents' -ne 255) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg delete "HKLM\SYSTEM\CurrentControlSet\services\TCPIP6\Parameters" /v "DisabledComponents" /f 2>$null | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "MLD / ICMP / Chimney / DCA (avancado)"; Category = "Rede"; Danger = $true
@@ -854,7 +1072,13 @@ $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Active Probing (NLA)"; Category = "Rede"; Danger = $false
     Description = "Impede que o Windows verifique conectividade real da internet a cada rede."
     Apply  = { reg add "HKLM\System\CurrentControlSet\services\NlaSvc\Parameters\Internet" /v "EnableActiveProbing" /t REG_DWORD /d 0 /f | Out-Null }
-    Revert = { reg add "HKLM\System\CurrentControlSet\services\NlaSvc\Parameters\Internet" /v "EnableActiveProbing" /t REG_DWORD /d 1 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\System\CurrentControlSet\services\NlaSvc\Parameters\Internet" -Name 'EnableActiveProbing' -ErrorAction SilentlyContinue).'EnableActiveProbing' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\System\CurrentControlSet\services\NlaSvc\Parameters\Internet" /v "EnableActiveProbing" /t REG_DWORD /d 1 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Prioridades de DNS/Local/Hosts/NetBT"; Category = "Rede"; Danger = $false
@@ -866,7 +1090,17 @@ $Tweaks += [PSCustomObject]@{
         reg add $k /v "HostsPriority" /t REG_DWORD /d 5 /f | Out-Null
         reg add $k /v "NetbtPriority" /t REG_DWORD /d 7 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        $k = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\ServiceProvider"
+        try {
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'DnsPriority' -ErrorAction SilentlyContinue).'DnsPriority' -ne 6) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'LocalPriority' -ErrorAction SilentlyContinue).'LocalPriority' -ne 4) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'HostsPriority' -ErrorAction SilentlyContinue).'HostsPriority' -ne 5) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'NetbtPriority' -ErrorAction SilentlyContinue).'NetbtPriority' -ne 7) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         $k = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\ServiceProvider"
         foreach ($v in "DnsPriority", "LocalPriority", "HostsPriority", "NetbtPriority") { reg delete $k /v $v /f 2>$null | Out-Null }
     }
@@ -941,7 +1175,13 @@ $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Network Throttling Index"; Category = "Rede"; Danger = $false
     Description = "Remove o limite que o Windows impoe no processamento de rede multimidia - reduz jitter/lag em jogos online."
     Apply  = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "NetworkThrottlingIndex" /t REG_DWORD /d 0xffffffff /f | Out-Null }
-    Revert = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "NetworkThrottlingIndex" /t REG_DWORD /d 10 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name 'NetworkThrottlingIndex' -ErrorAction SilentlyContinue).'NetworkThrottlingIndex' -ne 0xffffffff) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "NetworkThrottlingIndex" /t REG_DWORD /d 10 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Forcar Velocidade Maxima da Placa de Rede (Speed & Duplex)"; Category = "Rede"; Danger = $false
@@ -1006,7 +1246,13 @@ $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Power Throttling"; Category = "Energia"; Danger = $false
     Description = "Impede que o Windows reduza a performance de apps pra economizar energia."
     Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v "PowerThrottlingOff" /t REG_DWORD /d 1 /f | Out-Null }
-    Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v "PowerThrottlingOff" /t REG_DWORD /d 0 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" -Name 'PowerThrottlingOff' -ErrorAction SilentlyContinue).'PowerThrottlingOff' -ne 1) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v "PowerThrottlingOff" /t REG_DWORD /d 0 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Economia USB/HDD (HIPM/DIPM/StorPort)"; Category = "Energia"; Danger = $false
@@ -1032,7 +1278,15 @@ $Tweaks += [PSCustomObject]@{
         reg add $k /v "DisableTaggedEnergyLogging" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "EnergyEstimationEnabled" /t REG_DWORD /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        $k = "HKLM\SYSTEM\CurrentControlSet\Control\Power\EnergyEstimation\TaggedEnergy"
+        try {
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'DisableTaggedEnergyLogging' -ErrorAction SilentlyContinue).'DisableTaggedEnergyLogging' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Power" -Name 'EnergyEstimationEnabled' -ErrorAction SilentlyContinue).'EnergyEstimationEnabled' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         $k = "HKLM\SYSTEM\CurrentControlSet\Control\Power\EnergyEstimation\TaggedEnergy"
         reg add $k /v "DisableTaggedEnergyLogging" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "EnergyEstimationEnabled" /t REG_DWORD /d 1 /f | Out-Null
@@ -1117,7 +1371,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKLM\System\CurrentControlSet\Control\Power" /v "PlatformAoAcOverride" /t REG_DWORD /d 0 /f | Out-Null
         reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "CsEnabled" /t REG_DWORD /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\System\CurrentControlSet\Control\Power" -Name 'PlatformAoAcOverride' -ErrorAction SilentlyContinue).'PlatformAoAcOverride' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Power" -Name 'CsEnabled' -ErrorAction SilentlyContinue).'CsEnabled' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKLM\System\CurrentControlSet\Control\Power" /v "PlatformAoAcOverride" /t REG_DWORD /d 1 /f | Out-Null
         reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "CsEnabled" /t REG_DWORD /d 1 /f | Out-Null
     }
@@ -1166,7 +1427,13 @@ $Tweaks += [PSCustomObject]@{
     Name = "NVIDIA: Forcar Memoria Contigua"; Category = "GPU"; Danger = $false
     Description = "Pode reduzir engasgos (stutter) em algumas placas de video NVIDIA."
     Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "PreferSystemMemoryContiguous" /t REG_DWORD /d 1 /f | Out-Null }
-    Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "PreferSystemMemoryContiguous" /t REG_DWORD /d 0 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" -Name 'PreferSystemMemoryContiguous' -ErrorAction SilentlyContinue).'PreferSystemMemoryContiguous' -ne 1) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "PreferSystemMemoryContiguous" /t REG_DWORD /d 0 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "AMD: Desabilitar Servicos de Telemetria"; Category = "GPU"; Danger = $false
@@ -1216,7 +1483,13 @@ $Tweaks += [PSCustomObject]@{
     Name = "Habilitar Hardware-Accelerated GPU Scheduling"; Category = "InputLag"; Danger = $false
     Description = "Deixa a propria GPU gerenciar a fila de memoria de video, reduzindo latencia (Windows 10 2004 ou mais novo)."
     Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d 2 /f | Out-Null }
-    Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d 1 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" -Name 'HwSchMode' -ErrorAction SilentlyContinue).'HwSchMode' -ne 2) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d 1 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "NVIDIA: Latencia e DMA Remapping"; Category = "InputLag"; Danger = $false
@@ -1260,7 +1533,24 @@ $Tweaks += [PSCustomObject]@{
         reg add $k /v "PerfStateMax" /t REG_DWORD /d 1 /f | Out-Null
         reg add $k /v "RadeonOverlayEnabled" /t REG_DWORD /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        $k = "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000"
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Services\amdwddmg" -Name 'ChillEnabled' -ErrorAction SilentlyContinue).'ChillEnabled' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'KMD_DeLagEnabled' -ErrorAction SilentlyContinue).'KMD_DeLagEnabled' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'KMD_RadeonBoostEnabled' -ErrorAction SilentlyContinue).'KMD_RadeonBoostEnabled' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'EnhancedSync' -ErrorAction SilentlyContinue).'EnhancedSync' -ne 0) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'SAMEnabled' -ErrorAction SilentlyContinue).'SAMEnabled' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'ForceConstantVoltage' -ErrorAction SilentlyContinue).'ForceConstantVoltage' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'PowerTuningUnlock' -ErrorAction SilentlyContinue).'PowerTuningUnlock' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'MaxPowerLimit' -ErrorAction SilentlyContinue).'MaxPowerLimit' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'FanCurveOptimized' -ErrorAction SilentlyContinue).'FanCurveOptimized' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'PerfStateMax' -ErrorAction SilentlyContinue).'PerfStateMax' -ne 1) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'RadeonOverlayEnabled' -ErrorAction SilentlyContinue).'RadeonOverlayEnabled' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg delete "HKLM\SYSTEM\CurrentControlSet\Services\amdwddmg" /v "ChillEnabled" /f 2>$null | Out-Null
         $k = "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000"
         foreach ($v in "KMD_DeLagEnabled","KMD_RadeonBoostEnabled","EnhancedSync","SAMEnabled","ForceConstantVoltage","PowerTuningUnlock","MaxPowerLimit","FanCurveOptimized","PerfStateMax","RadeonOverlayEnabled") {
@@ -1314,13 +1604,25 @@ $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Paging Executive"; Category = "Memoria"; Danger = $false
     Description = "Mantem o sistema sempre na RAM, sem usar o disco como memoria extra - recomendado com 16GB+ de RAM."
     Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "DisablePagingExecutive" /t REG_DWORD /d 1 /f | Out-Null }
-    Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "DisablePagingExecutive" /t REG_DWORD /d 0 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name 'DisablePagingExecutive' -ErrorAction SilentlyContinue).'DisablePagingExecutive' -ne 1) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "DisablePagingExecutive" /t REG_DWORD /d 0 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Large System Cache"; Category = "Memoria"; Danger = $false
     Description = "Prioriza a memoria RAM pros seus aplicativos em vez do cache do sistema."
     Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "LargeSystemCache" /t REG_DWORD /d 0 /f | Out-Null }
-    Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "LargeSystemCache" /t REG_DWORD /d 1 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -Name 'LargeSystemCache' -ErrorAction SilentlyContinue).'LargeSystemCache' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "LargeSystemCache" /t REG_DWORD /d 1 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Habilitar Page Combining"; Category = "Memoria"; Danger = $false
@@ -1354,7 +1656,15 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d 0 /f | Out-Null
         reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Mouse" -Name 'MouseSpeed' -ErrorAction SilentlyContinue).'MouseSpeed' -ne '0') { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Mouse" -Name 'MouseThreshold1' -ErrorAction SilentlyContinue).'MouseThreshold1' -ne '0') { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Mouse" -Name 'MouseThreshold2' -ErrorAction SilentlyContinue).'MouseThreshold2' -ne '0') { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d 1 /f | Out-Null
         reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d 6 /f | Out-Null
         reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d 10 /f | Out-Null
@@ -1367,7 +1677,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKCU\Control Panel\Keyboard" /v "KeyboardDelay" /t REG_SZ /d 0 /f | Out-Null
         reg add "HKCU\Control Panel\Keyboard" /v "KeyboardSpeed" /t REG_SZ /d 31 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Keyboard" -Name 'KeyboardDelay' -ErrorAction SilentlyContinue).'KeyboardDelay' -ne '0') { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Keyboard" -Name 'KeyboardSpeed' -ErrorAction SilentlyContinue).'KeyboardSpeed' -ne '31') { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKCU\Control Panel\Keyboard" /v "KeyboardDelay" /t REG_SZ /d 1 /f | Out-Null
         reg add "HKCU\Control Panel\Keyboard" /v "KeyboardSpeed" /t REG_SZ /d 31 /f | Out-Null
     }
@@ -1381,7 +1698,16 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f | Out-Null
         reg add "HKCU\Control Panel\Accessibility\MouseKeys" /v "Flags" /t REG_SZ /d 0 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Accessibility\Keyboard Response" -Name 'Flags' -ErrorAction SilentlyContinue).'Flags' -ne '122') { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Accessibility\ToggleKeys" -Name 'Flags' -ErrorAction SilentlyContinue).'Flags' -ne '58') { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Accessibility\StickyKeys" -Name 'Flags' -ErrorAction SilentlyContinue).'Flags' -ne '506') { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Accessibility\MouseKeys" -Name 'Flags' -ErrorAction SilentlyContinue).'Flags' -ne '0') { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg delete "HKCU\Control Panel\Accessibility\Keyboard Response" /v "Flags" /f 2>$null | Out-Null
         reg delete "HKCU\Control Panel\Accessibility\ToggleKeys" /v "Flags" /f 2>$null | Out-Null
         reg delete "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /f 2>$null | Out-Null
@@ -1396,7 +1722,15 @@ $Tweaks += [PSCustomObject]@{
         reg add $k /v "CpuPriorityClass" /t REG_DWORD /d 4 /f | Out-Null
         reg add $k /v "IoPriority" /t REG_DWORD /d 3 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        $k = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions"
+        try {
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'CpuPriorityClass' -ErrorAction SilentlyContinue).'CpuPriorityClass' -ne 4) { return $false }
+            if ((Get-ItemProperty -Path "Registry::$($k)" -Name 'IoPriority' -ErrorAction SilentlyContinue).'IoPriority' -ne 3) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         $k = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions"
         reg add $k /v "CpuPriorityClass" /t REG_DWORD /d 3 /f | Out-Null
         reg add $k /v "IoPriority" /t REG_DWORD /d 2 /f | Out-Null
@@ -1409,7 +1743,14 @@ $Tweaks += [PSCustomObject]@{
         reg add "HKLM\SYSTEM\CurrentControlSet\Services\mouclass\Parameters" /v "MouseDataQueueSize" /t REG_DWORD /d 80 /f | Out-Null
         reg add "HKLM\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters" /v "KeyboardDataQueueSize" /t REG_DWORD /d 80 /f | Out-Null
     }
-    Revert = {
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Services\mouclass\Parameters" -Name 'MouseDataQueueSize' -ErrorAction SilentlyContinue).'MouseDataQueueSize' -ne 80) { return $false }
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters" -Name 'KeyboardDataQueueSize' -ErrorAction SilentlyContinue).'KeyboardDataQueueSize' -ne 80) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = {
         reg add "HKLM\SYSTEM\CurrentControlSet\Services\mouclass\Parameters" /v "MouseDataQueueSize" /t REG_DWORD /d 100 /f | Out-Null
         reg add "HKLM\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters" /v "KeyboardDataQueueSize" /t REG_DWORD /d 100 /f | Out-Null
     }
@@ -1418,7 +1759,13 @@ $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Suspensao Seletiva USB"; Category = "InputLag"; Danger = $false
     Description = "Impede que as portas USB durmam sozinhas - evita mouse/teclado travando por um instante."
     Apply  = { reg add "HKLM\SYSTEM\CurrentControlSet\Services\USB" /v "DisableSelectiveSuspend" /t REG_DWORD /d 1 /f | Out-Null }
-    Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Services\USB" /v "DisableSelectiveSuspend" /t REG_DWORD /d 0 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Services\USB" -Name 'DisableSelectiveSuspend' -ErrorAction SilentlyContinue).'DisableSelectiveSuspend' -ne 1) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SYSTEM\CurrentControlSet\Services\USB" /v "DisableSelectiveSuspend" /t REG_DWORD /d 0 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar Economia de Energia em Dispositivos PCI/USB"; Category = "InputLag"; Danger = $false
@@ -1541,25 +1888,49 @@ $Tweaks += [PSCustomObject]@{
     Name = "Ativar Modo Escuro"; Category = "Adicional"; Danger = $false
     Description = "Aplica o tema escuro em todo o sistema e nos aplicativos."
     Apply  = { reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "AppsUseLightTheme" /t REG_DWORD /d 0 /f | Out-Null }
-    Revert = { reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "AppsUseLightTheme" /t REG_DWORD /d 1 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" -Name 'AppsUseLightTheme' -ErrorAction SilentlyContinue).'AppsUseLightTheme' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "AppsUseLightTheme" /t REG_DWORD /d 1 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Mostrar Extensoes de Arquivo"; Category = "Adicional"; Danger = $false
     Description = "Mostra a extensao (.exe, .txt, etc) de todos os arquivos no Explorer."
     Apply  = { reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideFileExt" /t REG_DWORD /d 0 /f | Out-Null }
-    Revert = { reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideFileExt" /t REG_DWORD /d 1 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name 'HideFileExt' -ErrorAction SilentlyContinue).'HideFileExt' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideFileExt" /t REG_DWORD /d 1 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Melhorar Qualidade do Papel de Parede"; Category = "Adicional"; Danger = $false
     Description = "Evita que o Windows comprima demais a qualidade do seu papel de parede."
     Apply  = { reg add "HKCU\Control Panel\Desktop" /v "JPEGImportQuality" /t REG_DWORD /d 256 /f | Out-Null }
-    Revert = { reg delete "HKCU\Control Panel\Desktop" /v "JPEGImportQuality" /f 2>$null | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKCU\Control Panel\Desktop" -Name 'JPEGImportQuality' -ErrorAction SilentlyContinue).'JPEGImportQuality' -ne 256) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg delete "HKCU\Control Panel\Desktop" /v "JPEGImportQuality" /f 2>$null | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Desabilitar UAC"; Category = "Adicional"; Danger = $true
     Description = "⚠️ Todo programa roda como admin automaticamente. Reduz seguranca do sistema - use com cautela."
     Apply  = { reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v "EnableLUA" /t REG_DWORD /d 0 /f | Out-Null }
-    Revert = { reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v "EnableLUA" /t REG_DWORD /d 1 /f | Out-Null }
+    Check = {
+        try {
+            if ((Get-ItemProperty -Path "Registry::HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name 'EnableLUA' -ErrorAction SilentlyContinue).'EnableLUA' -ne 0) { return $false }
+            return $true
+        } catch { return $false }
+    }
+        Revert = { reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v "EnableLUA" /t REG_DWORD /d 1 /f | Out-Null }
 }
 $Tweaks += [PSCustomObject]@{
     Name = "Criar Ponto de Restauracao Manual"; Category = "Adicional"; Danger = $false
@@ -1570,6 +1941,61 @@ $Tweaks += [PSCustomObject]@{
     }
     Revert = { Write-Log "  [INFO] Use 'rstrui.exe' pra restaurar o Windows a partir de um ponto salvo." }
 }
+
+# --------------------------------------------------------------------------
+# Tweaks universais: seguros pra qualquer PC, sem downside. Aplicados
+# automaticamente na tela de loading (nao aparecem no painel de selecao).
+# Cada um tem Check (pra pular se ja aplicado) e Label (nome curto pra
+# mostrar na tela de loading enquanto roda).
+# --------------------------------------------------------------------------
+$Global:UniversalTweaks = @(
+    [PSCustomObject]@{
+        Name = "Mostrar extensoes de arquivo"; Label = "Extensoes de arquivo"
+        Apply = { reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideFileExt" /t REG_DWORD /d 0 /f | Out-Null }
+        Check = {
+            try { (Get-ItemProperty -Path "Registry::HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name 'HideFileExt' -ErrorAction Stop).'HideFileExt' -eq 0 }
+            catch { $false }
+        }
+    }
+    [PSCustomObject]@{
+        Name = "Fechar apps travados mais rapido"; Label = "Apps travados + rapido"
+        Apply = {
+            reg add "HKCU\Control Panel\Desktop" /v "AutoEndTasks" /t REG_SZ /d "1" /f | Out-Null
+            reg add "HKCU\Control Panel\Desktop" /v "HungAppTimeout" /t REG_SZ /d "1000" /f | Out-Null
+            reg add "HKCU\Control Panel\Desktop" /v "WaitToKillAppTimeout" /t REG_SZ /d "2000" /f | Out-Null
+        }
+        Check = {
+            try { (Get-ItemProperty -Path "Registry::HKCU\Control Panel\Desktop" -Name 'AutoEndTasks' -ErrorAction Stop).'AutoEndTasks' -eq "1" }
+            catch { $false }
+        }
+    }
+    [PSCustomObject]@{
+        Name = "Prioridade de foreground pra apps em foco"; Label = "Prioridade apps em foco"
+        Apply = { reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 0x26 /f | Out-Null }
+        Check = {
+            try { (Get-ItemProperty -Path "Registry::HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" -Name 'Win32PrioritySeparation' -ErrorAction Stop).'Win32PrioritySeparation' -eq 38 }
+            catch { $false }
+        }
+    }
+    [PSCustomObject]@{
+        Name = "Reduzir atraso do menu iniciar"; Label = "Menus mais rapidos"
+        Apply = { reg add "HKCU\Control Panel\Desktop" /v "MenuShowDelay" /t REG_SZ /d "0" /f | Out-Null }
+        Check = {
+            try { (Get-ItemProperty -Path "Registry::HKCU\Control Panel\Desktop" -Name 'MenuShowDelay' -ErrorAction Stop).'MenuShowDelay' -eq "0" }
+            catch { $false }
+        }
+    }
+    [PSCustomObject]@{
+        Name = "Habilitar TRIM/otimizacao automatica do disco"; Label = "TRIM automatico do disco"
+        Apply = { fsutil behavior set DisableDeleteNotify 0 | Out-Null }
+        Check = {
+            try {
+                $out = fsutil behavior query DisableDeleteNotify 2>$null
+                return ($out -match "0")
+            } catch { $false }
+        }
+    }
+)
 
 # ==========================================================================
 # ETAPA 3: Interface Grafica (XAML + WPF)
@@ -1697,6 +2123,7 @@ $Tweaks += [PSCustomObject]@{
         </Style>
     </Window.Resources>
 
+    <Grid x:Name="RootGrid">
     <DockPanel LastChildFill="True">
 
         <Border DockPanel.Dock="Top" Background="#FF141218" Padding="20,16">
@@ -1714,6 +2141,12 @@ $Tweaks += [PSCustomObject]@{
                     <TextBlock Text="Painel de Otimizacao para Windows" Foreground="#FF9A9AA5" FontSize="12" Margin="0,2,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+                        <Border x:Name="UserAvatarBorder" Width="30" Height="30" CornerRadius="15" Background="#FF4A4A55" ClipToBounds="True" VerticalAlignment="Center">
+                            <Image x:Name="UserAvatarImage" Width="30" Height="30" Stretch="UniformToFill"/>
+                        </Border>
+                        <TextBlock x:Name="UserNameText" Text="" Foreground="#FFD6D6DE" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" Margin="9,0,0,0"/>
+                    </StackPanel>
                     <TextBlock x:Name="CounterText" Text="0 selecionados" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" FontSize="13" HorizontalAlignment="Right"/>
                     <TextBlock x:Name="TotalText" Text="" Foreground="#FF7A7A85" FontSize="11" HorizontalAlignment="Right" Margin="0,2,0,0"/>
                 </StackPanel>
@@ -1752,6 +2185,13 @@ $Tweaks += [PSCustomObject]@{
         </Grid>
 
     </DockPanel>
+
+    <Grid x:Name="LoadingOverlay" Background="#FF0D0D10">
+        <Canvas x:Name="DotsCanvas" HorizontalAlignment="Center" VerticalAlignment="Center" Width="1" Height="1"/>
+        <TextBlock Text="LAIT TWEAKS" Foreground="#FF6B6B78" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,90,0,0"/>
+        <TextBlock x:Name="LoadingStatusText" Text="" Foreground="#FF9A9AA5" FontSize="12.5" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,122,0,0" Opacity="0"/>
+    </Grid>
+    </Grid>
 </Window>
 "@
 
@@ -1760,6 +2200,8 @@ $window = [Windows.Markup.XamlReader]::Load($reader)
 
 $NavGrid      = $window.FindName("NavGrid")
 $ContentHost  = $window.FindName("ContentHost")
+$LoadingOverlay = $window.FindName("LoadingOverlay")
+$DotsCanvas     = $window.FindName("DotsCanvas")
 $BtnApply     = $window.FindName("BtnApply")
 $BtnRevert    = $window.FindName("BtnRevert")
 $BtnRestore   = $window.FindName("BtnRestore")
@@ -1786,6 +2228,34 @@ if ($LogoImage -and $Global:LogoBase64) {
     }
 }
 
+$UserAvatarImage = $window.FindName("UserAvatarImage")
+$UserAvatarBorder = $window.FindName("UserAvatarBorder")
+$UserNameText = $window.FindName("UserNameText")
+if ($UserNameText) { $UserNameText.Text = $env:USERNAME }
+if ($UserAvatarImage) {
+    try {
+        $avatarPath = $null
+        $accPicDir = Join-Path $env:APPDATA "Microsoft\Windows\AccountPictures"
+        if (Test-Path $accPicDir) {
+            $candidate = Get-ChildItem -Path $accPicDir -Include "*.jpg","*.jpeg","*.png","*.bmp" -File -Recurse -ErrorAction SilentlyContinue |
+                Sort-Object Length -Descending | Select-Object -First 1
+            if ($candidate) { $avatarPath = $candidate.FullName }
+        }
+        if ($avatarPath) {
+            $bmpUser = New-Object System.Windows.Media.Imaging.BitmapImage
+            $bmpUser.BeginInit()
+            $bmpUser.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $bmpUser.UriSource = New-Object System.Uri($avatarPath)
+            $bmpUser.EndInit()
+            $bmpUser.Freeze()
+            $UserAvatarImage.Source = $bmpUser
+        }
+        # Sem foto: o Border ja fica cinza (Background definido no XAML), nada a fazer.
+    } catch {
+        # Falhou ao carregar - mantem o circulo cinza padrao
+    }
+}
+
 $categoryMeta = [ordered]@{
     "Geral"         = "🧩  Geral"
     "Debloat"       = "🧹  Debloat"
@@ -1801,12 +2271,19 @@ $categoryMeta = [ordered]@{
 }
 
 $checkboxMap   = @{}
+$borderMap     = @{}
 $categoryPanel = @{}
 $navButtons    = @{}
 
 function Update-Counter {
     $checked = @($checkboxMap.Keys | Where-Object { $_.IsChecked -eq $true })
     $CounterText.Text = "$($checked.Count) selecionados"
+}
+
+function Pump-UI {
+    $frame = New-Object System.Windows.Threading.DispatcherFrame
+    $null = $window.Dispatcher.BeginInvoke([System.Windows.Threading.DispatcherPriority]::Background, [Action]{ $frame.Continue = $false })
+    [System.Windows.Threading.Dispatcher]::PushFrame($frame)
 }
 
 function Show-Category($cat) {
@@ -1850,6 +2327,9 @@ foreach ($catKey in $categoryMeta.Keys) {
 
         $panel.Children.Add($cb) | Out-Null
         $checkboxMap[$cb] = $t
+        $cb.ApplyTemplate() | Out-Null
+        $cardBd = $cb.Template.FindName("CardBd", $cb)
+        if ($cardBd) { $borderMap[$cb] = $cardBd }
     }
 
     $scroll.Content = $panel
@@ -1899,31 +2379,317 @@ $BtnClearAll.Add_Click({
     Update-Counter
 })
 
+$BlueBorderBrush  = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(0x3B,0x82,0xF6))
+$GreenBorderBrush = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(0x22,0xC5,0x5E))
+
+function Set-RunButtonsEnabled([bool]$enabled) {
+    foreach ($b in @($BtnApply,$BtnRevert,$BtnSelectAll,$BtnClearAll,$BtnRestore)) { $b.IsEnabled = $enabled }
+}
+
 $BtnApply.Add_Click({
-    $selected = $checkboxMap.GetEnumerator() | Where-Object { $_.Key.IsChecked -eq $true }
-    if (@($selected).Count -eq 0) { Write-Log "Nenhum tweak selecionado."; return }
+    $selected = @($checkboxMap.GetEnumerator() | Where-Object { $_.Key.IsChecked -eq $true })
+    if ($selected.Count -eq 0) { Write-Log "Nenhum tweak selecionado."; return }
+    Set-RunButtonsEnabled $false
+    $original = $BtnApply.Content
+    $i = 0
     foreach ($item in $selected) {
+        $i++
+        $cb = $item.Key
         $t = $item.Value
-        Write-Log "Aplicando: $($t.Name)..."
-        try { & $t.Apply; Write-Log "  [OK]" }
+        $BtnApply.Content = "Aplicando ($i/$($selected.Count))..."
+        Write-Log "Aplicando ($i/$($selected.Count)): $($t.Name)..."
+        Pump-UI
+        try {
+            & $t.Apply
+            Write-Log "  [OK]"
+            if ($borderMap.ContainsKey($cb)) { $borderMap[$cb].BorderBrush = $GreenBorderBrush }
+            $cb.IsChecked = $false
+        }
         catch { Write-Log "  [ERRO] $($_.Exception.Message)" }
+        Pump-UI
     }
+    $BtnApply.Content = $original
+    Set-RunButtonsEnabled $true
     Write-Log "Concluido."
 })
 
 $BtnRevert.Add_Click({
-    $selected = $checkboxMap.GetEnumerator() | Where-Object { $_.Key.IsChecked -eq $true }
-    if (@($selected).Count -eq 0) { Write-Log "Nenhum tweak selecionado."; return }
+    $selected = @($checkboxMap.GetEnumerator() | Where-Object { $_.Key.IsChecked -eq $true })
+    if ($selected.Count -eq 0) { Write-Log "Nenhum tweak selecionado."; return }
+    Set-RunButtonsEnabled $false
+    $original = $BtnRevert.Content
+    $i = 0
     foreach ($item in $selected) {
+        $i++
+        $cb = $item.Key
         $t = $item.Value
-        Write-Log "Revertendo: $($t.Name)..."
-        try { & $t.Revert; Write-Log "  [OK]" }
+        $BtnRevert.Content = "Revertendo ($i/$($selected.Count))..."
+        Write-Log "Revertendo ($i/$($selected.Count)): $($t.Name)..."
+        Pump-UI
+        try {
+            & $t.Revert
+            Write-Log "  [OK]"
+            if ($borderMap.ContainsKey($cb)) { $borderMap[$cb].BorderBrush = $window.Resources["CardBorderBrush"] }
+        }
         catch { Write-Log "  [ERRO] $($_.Exception.Message)" }
+        Pump-UI
     }
+    $BtnRevert.Content = $original
+    Set-RunButtonsEnabled $true
     Write-Log "Concluido."
 })
+
+function Test-EstadoAtual {
+    Write-Log "Verificando o que ja esta aplicado no sistema..."
+    $count = 0
+    foreach ($item in $checkboxMap.GetEnumerator()) {
+        $cb = $item.Key
+        $t = $item.Value
+        if (-not $t.Check) { continue }
+        try {
+            $isApplied = & $t.Check
+            if ($isApplied -and $borderMap.ContainsKey($cb)) {
+                $borderMap[$cb].BorderBrush = $BlueBorderBrush
+                $count++
+            }
+        } catch { }
+    }
+    Write-Log "  [OK] $count tweaks ja detectados como aplicados (borda azul)."
+}
 
 Write-Log "LAIT TWEAKS carregado. $($Tweaks.Count) tweaks em $($categoryPanel.Count) categorias."
 Write-Log "O tweak de MLD/ICMP em Rede esta em VERMELHO porque quebra o FiveM - reverta antes de jogar."
 Write-Log "Dica: crie um ponto de restauracao antes de aplicar tweaks de sistema."
+function Build-LoadingDots {
+    $count = 14
+    $ringRadius = 46.0
+    $dotSize = 8.0
+    $Global:LoadingDots = @()
+    for ($i = 0; $i -lt $count; $i++) {
+        $angle = (2 * [Math]::PI / $count) * $i
+        $targetX = [Math]::Cos($angle) * $ringRadius
+        $targetY = [Math]::Sin($angle) * $ringRadius
+        $dot = New-Object System.Windows.Shapes.Ellipse
+        $dot.Width = $dotSize
+        $dot.Height = $dotSize
+        $dot.Fill = $window.Resources["AccentBrush"]
+        $dot.Opacity = 0
+        [System.Windows.Controls.Canvas]::SetLeft($dot, -$dotSize/2)
+        [System.Windows.Controls.Canvas]::SetTop($dot, -$dotSize/2)
+        $DotsCanvas.Children.Add($dot) | Out-Null
+        $Global:LoadingDots += [PSCustomObject]@{ Dot = $dot; TargetX = $targetX; TargetY = $targetY }
+    }
+}
+
+function New-DoubleAnim([double]$From, [double]$To, [int]$Ms, [int]$DelayMs = 0, [string]$EaseType = "None") {
+    $anim = New-Object System.Windows.Media.Animation.DoubleAnimation
+    $anim.From = $From
+    $anim.To = $To
+    $anim.Duration = New-Object System.Windows.Duration ([TimeSpan]::FromMilliseconds($Ms))
+    if ($DelayMs -gt 0) { $anim.BeginTime = [TimeSpan]::FromMilliseconds($DelayMs) }
+    if ($EaseType -eq "BackOut") {
+        $ef = New-Object System.Windows.Media.Animation.BackEase
+        $ef.Amplitude = 0.35
+        $ef.EasingMode = [System.Windows.Media.Animation.EasingMode]::EaseOut
+        $anim.EasingFunction = $ef
+    } elseif ($EaseType -eq "QuadIn") {
+        $ef = New-Object System.Windows.Media.Animation.QuadraticEase
+        $ef.EasingMode = [System.Windows.Media.Animation.EasingMode]::EaseIn
+        $anim.EasingFunction = $ef
+    }
+    return $anim
+}
+
+function Add-ToStoryboard($sb, $anim, $target, [string]$propertyPath) {
+    [System.Windows.Media.Animation.Storyboard]::SetTarget($anim, $target)
+    [System.Windows.Media.Animation.Storyboard]::SetTargetProperty($anim, (New-Object System.Windows.PropertyPath($propertyPath)))
+    $sb.Children.Add($anim)
+}
+
+function Start-RingRotation {
+    # Spinner continuo (o anel gira enquanto o trabalho real acontece, sem tempo fixo)
+    $rot = New-Object System.Windows.Media.RotateTransform
+    $rot.Angle = 0
+    $DotsCanvas.RenderTransform = $rot
+    $DotsCanvas.RenderTransformOrigin = New-Object System.Windows.Point(0.5,0.5)
+
+    $Global:RingSpinSb = New-Object System.Windows.Media.Animation.Storyboard
+    $spin = New-Object System.Windows.Media.Animation.DoubleAnimation
+    $spin.From = 0
+    $spin.To = 360
+    $spin.Duration = New-Object System.Windows.Duration ([TimeSpan]::FromMilliseconds(2200))
+    $spin.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
+    Add-ToStoryboard $Global:RingSpinSb $spin $rot "Angle"
+    $Global:RingSpinSb.Begin()
+}
+
+function Stop-RingRotation {
+    if ($Global:RingSpinSb) { $Global:RingSpinSb.Stop() }
+}
+
+function Set-LoadingStatus([string]$text) {
+    if (-not $LoadingStatusText) { return }
+    $fadeSb = New-Object System.Windows.Media.Animation.Storyboard
+    $fadeOut = New-DoubleAnim -From 1 -To 0 -Ms 120
+    Add-ToStoryboard $fadeSb $fadeOut $LoadingStatusText "Opacity"
+    $fadeSb.Completed.Add({
+        $LoadingStatusText.Text = $text
+        $fadeIn = New-Object System.Windows.Media.Animation.Storyboard
+        $anim = New-DoubleAnim -From 0 -To 1 -Ms 160
+        Add-ToStoryboard $fadeIn $anim $LoadingStatusText "Opacity"
+        $fadeIn.Begin()
+    }.GetNewClosure())
+    $fadeSb.Begin()
+    Pump-UI
+}
+
+function Invoke-CircularReveal {
+    # Revelacao circular translucida "consumindo" a tela de loading - dispara so
+    # depois que o trabalho real terminou (nao tem delay fixo esperando nada).
+    try {
+        Stop-RingRotation
+
+        $sb = New-Object System.Windows.Media.Animation.Storyboard
+
+        $cx = $window.Width / 2
+        $cy = $window.Height / 2
+        $maxRadius = [Math]::Sqrt($cx*$cx + $cy*$cy) + 40
+
+        $rectGeo = New-Object System.Windows.Media.RectangleGeometry
+        $rectGeo.Rect = New-Object System.Windows.Rect(0, 0, $window.Width, $window.Height)
+
+        $hole = New-Object System.Windows.Media.EllipseGeometry
+        $hole.Center = New-Object System.Windows.Point($cx, $cy)
+        $hole.RadiusX = 0
+        $hole.RadiusY = 0
+
+        $combined = New-Object System.Windows.Media.CombinedGeometry
+        $combined.GeometryCombineMode = [System.Windows.Media.GeometryCombineMode]::Exclude
+        $combined.Geometry1 = $rectGeo
+        $combined.Geometry2 = $hole
+        $LoadingOverlay.Clip = $combined
+
+        $animR1 = New-DoubleAnim -From 0 -To $maxRadius -Ms 550 -EaseType "QuadIn"
+        Add-ToStoryboard $sb $animR1 $hole "RadiusX"
+        $animR2 = New-DoubleAnim -From 0 -To $maxRadius -Ms 550 -EaseType "QuadIn"
+        Add-ToStoryboard $sb $animR2 $hole "RadiusY"
+
+        $animOverlayOp = New-DoubleAnim -From 1 -To 0 -Ms 380 -DelayMs 250
+        Add-ToStoryboard $sb $animOverlayOp $LoadingOverlay "Opacity"
+
+        # Fail-safe: garante que o overlay some mesmo se o Completed nao disparar
+        $Global:RevealFailSafe = New-Object System.Windows.Threading.DispatcherTimer
+        $Global:RevealFailSafe.Interval = [TimeSpan]::FromMilliseconds(1400)
+        $Global:RevealFailSafe.Add_Tick({
+            $Global:RevealFailSafe.Stop()
+            if ($LoadingOverlay.Visibility -ne "Collapsed") {
+                $LoadingOverlay.Visibility = "Collapsed"
+                $LoadingOverlay.IsHitTestVisible = $false
+            }
+        }.GetNewClosure())
+        $Global:RevealFailSafe.Start()
+
+        $sb.Completed.Add({
+            $LoadingOverlay.Visibility = "Collapsed"
+            $LoadingOverlay.IsHitTestVisible = $false
+        })
+        $sb.Begin()
+    } catch {
+        # Se QUALQUER coisa der errado na animacao, nao deixa o painel travado
+        $LoadingOverlay.Visibility = "Collapsed"
+        $LoadingOverlay.IsHitTestVisible = $false
+    }
+}
+
+function Start-RevealAnimation {
+    if ($Global:RevealAlreadyStarted) { return }   # protege contra ContentRendered disparando mais de uma vez
+    $Global:RevealAlreadyStarted = $true
+
+    try {
+        $sb = New-Object System.Windows.Media.Animation.Storyboard
+        $i = 0
+        foreach ($item in $Global:LoadingDots) {
+            $delay = $i * 30
+            $animX = New-DoubleAnim -From -4 -To $item.TargetX -Ms 500 -DelayMs $delay -EaseType "BackOut"
+            Add-ToStoryboard $sb $animX $item.Dot "(Canvas.Left)"
+            $animY = New-DoubleAnim -From -4 -To $item.TargetY -Ms 500 -DelayMs $delay -EaseType "BackOut"
+            Add-ToStoryboard $sb $animY $item.Dot "(Canvas.Top)"
+            $animOp = New-DoubleAnim -From 0 -To 1 -Ms 220 -DelayMs $delay
+            Add-ToStoryboard $sb $animOp $item.Dot "Opacity"
+            $i++
+        }
+
+        $statusFadeIn = New-DoubleAnim -From 0 -To 1 -Ms 300 -DelayMs 350
+        Add-ToStoryboard $sb $statusFadeIn $LoadingStatusText "Opacity"
+
+        # Assim que o anel termina de se formar: comeca a girar (spinner) e
+        # dispara o trabalho real (checar/aplicar tweaks universais).
+        $sb.Completed.Add({
+            Start-RingRotation
+            Invoke-UniversalTweaksWithLoadingUI
+        }.GetNewClosure())
+
+        # Fail-safe: se por algum motivo o Completed nunca disparar, comeca o
+        # trabalho e a revelacao mesmo assim depois de um tempo curto.
+        $Global:FormFailSafe = New-Object System.Windows.Threading.DispatcherTimer
+        $Global:FormFailSafe.Interval = [TimeSpan]::FromMilliseconds(1800)
+        $Global:FormFailSafe.Add_Tick({
+            $Global:FormFailSafe.Stop()
+            if ($LoadingOverlay.Visibility -ne "Collapsed" -and -not $Global:UniversalWorkStarted) {
+                Start-RingRotation
+                Invoke-UniversalTweaksWithLoadingUI
+            }
+        }.GetNewClosure())
+        $Global:FormFailSafe.Start()
+
+        $sb.Begin()
+    } catch {
+        # Se a formacao do anel falhar, pula direto pro trabalho real e revelacao
+        Invoke-UniversalTweaksWithLoadingUI
+    }
+}
+
+function Invoke-UniversalTweaksWithLoadingUI {
+    if ($Global:UniversalWorkStarted) { return }
+    $Global:UniversalWorkStarted = $true
+
+    try {
+        foreach ($t in $Global:UniversalTweaks) {
+            Set-LoadingStatus $t.Label
+            Start-Sleep -Milliseconds 120   # da tempo do texto aparecer antes do trabalho
+            Pump-UI
+
+            $already = $false
+            try { if ($t.Check) { $already = & $t.Check } } catch { $already = $false }
+
+            if ($already) {
+                Write-Log "Ja aplicado: $($t.Name)"
+            } else {
+                try {
+                    & $t.Apply
+                    Write-Log "Aplicado automaticamente: $($t.Name)"
+                } catch {
+                    Write-Log "  [ERRO] $($t.Name): $($_.Exception.Message)"
+                }
+            }
+            Pump-UI
+        }
+
+        # Tambem aproveita a tela de loading pra marcar (borda azul) os tweaks
+        # opcionais do painel que ja estiverem aplicados no sistema.
+        Set-LoadingStatus "Verificando tweaks"
+        Pump-UI
+        Test-EstadoAtual
+        Pump-UI
+    } catch {
+        Write-Log "  [ERRO na checagem automatica] $($_.Exception.Message)"
+    } finally {
+        Set-LoadingStatus "Pronto"
+        Pump-UI
+        Invoke-CircularReveal
+    }
+}
+
+Build-LoadingDots
+$window.Add_ContentRendered({ Start-RevealAnimation })
 $window.ShowDialog() | Out-Null
